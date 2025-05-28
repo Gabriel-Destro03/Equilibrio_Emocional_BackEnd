@@ -1,0 +1,16 @@
+
+@layout('master')
+@section("body")
+  <p> <b>Olá {{sendEmail.userName}}</b></p>
+  <p>Seu código de confirmação está abaixo:</p>
+   <table role="presentation" border="0" cellpadding="0" cellspacing="0">
+    <tbody>
+      <tr>
+        <td class="col-2" align="left">Código de confirmação: {{sendEmail.code}}</td>
+      </tr>
+    </tbody>
+  </table>
+@endsection
+
+
+

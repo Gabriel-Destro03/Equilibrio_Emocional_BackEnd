@@ -1,0 +1,43 @@
+@layout('masterProforma')
+@section("body")
+  <p> Olá !</p>   
+  <p>Um novo pedido foi aberto e está aguardado a sua análise para a aprovação.</p>   
+  <p>Veja baixo alguns detalhes:</p>   
+
+  <p>Número do pedido: <strong>{{orderJson.purchase_order}}</strong></p>
+  <p>Seller: <strong>{{orderJson.seller.name}}</strong></p>
+  <p>Buyer: <strong>{{orderJson.buyer.name}} </strong></p>
+  <p>Total Value: 
+    <strong>
+    {{orderJson.price.subtotalFormat}}
+    </strong>
+  </p>
+
+  <p>Voce pode aprovar ou desaprovar clicando nos botões abaixo. Para mais detalhes do pedido acesse a plataforma com o seu usuário e senha</p>
+
+  <p><strong>Obrigado!</strong></p>
+
+   <div
+  style="display:flex; justify-content:space-between; align-items:center; width:90%; margin:0 auto;"
+  >
+    <a
+      href="https://app.xportechsolutions.com.br/approveEmail/{{orderJson.token}}/true/{{orderJson.uuid}}/"
+    style="padding:1rem 0.5rem; text-decoration:none; color:white; background:#23C593; width:210px; font-size:1rem
+    ; border-radius:2rem;font-weight:bold; text-decoration:none; text-align:center;"
+    >
+      APPROVE ORDER
+    </a>
+    <a
+    href="https://app.xportechsolutions.com.br/approveEmail/{{orderJson.token}}/false/{{orderJson.uuid}}/"
+    style="padding:1rem 0.5rem; text-decoration:none; color:#813146; background:white ;
+    border:2px solid #813146; width:210px; font-size:1rem
+    ; font-weight:bold;border-radius:2rem; text-decoration:none; text-align:center;"
+    >
+      DISPAPPROVE ORDER
+    </a>
+
+  </div>
+@endsection
+
+
+

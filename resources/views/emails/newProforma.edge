@@ -1,0 +1,21 @@
+@layout('masterProforma')
+@section("body")
+  <p> Olá !!</strong></p>
+  <p>Uma nova Proforma foi lançada e está pronta para a solicitação de Booking.</p>  
+  <p>Veja alguns detalhes:</p>  
+
+  <p>Número da Proforma: <strong>{{orderJson.supplier_proform}} </strong></p>
+  <p>Seller: <strong>{{orderJson.seller.name}}</strong></p>
+  <p>Buyer: <strong>{{orderJson.buyer.name}} </strong></p>
+
+  <p>Entre em contato com o responsável da Proforma caso necessite mais detalhes sobre a carga</p>
+
+  <p>Não se esqueça de solicitar esse booking para evitar atrasos de entrega</p>
+
+  <p><strong>Obrigado!</strong></p>
+  
+
+@endsection
+
+
+

@@ -1,0 +1,30 @@
+@layout('master')
+@section("body")
+  <p> <b>{{userForgot.name}}</b> - Registre uma nova senha para sua conta.</p>
+   <table role="presentation" border="0" cellpadding="0" cellspacing="0">
+    <tbody>
+      <tr>
+        <td class="col-2" align="left"><b>User:</b> {{userForgot.email}}</td>
+      </tr>
+    </tbody>
+  </table>
+  <br>
+  <table role="presentation" border="0" cellpadding="0" cellspacing="0" class="btn btn-primary">
+    <tbody>
+      <tr>
+        <td align="left">
+          <table role="presentation" border="0" cellpadding="0" cellspacing="0">
+            <tbody>
+              <tr>
+                <td> <a href="http://localhost:3000/reset/{{userForgot.token}}<" target="_blank">Reset password</a> </td>
+              </tr>
+            </tbody>
+          </table>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+@endsection
+
+
+

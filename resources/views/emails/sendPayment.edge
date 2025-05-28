@@ -1,0 +1,25 @@
+@layout('master')
+@section("body")
+  <p> Olá <strong>{{sendPayment.name}}</strong>!</p>   
+  <p>Agradecemos por escolher a plataforma Xportech para potencializar seus negócios. Estamos entusiasmados por tê-lo(a) conosco!</p>   
+  <p>Para facilitar sua assinatura do plano desejado, clique no botão abaixo para ser direcionado(a) ao link de pagamento seguro.</p> 
+
+     <div
+  style="display:flex; justify-content:space-between; align-items:center; width:100%; margin:0 auto;"
+  >
+    <a
+      href="{{sendPayment.url}}"
+    style="padding:1rem 0; text-decoration:none; color:white; background:#23C593; width:210px; font-size:1rem
+    ; border-radius:.5rem;font-weight:bold; text-decoration:none; text-align:center;"
+    >
+      Assinar Plano Xportech
+    </a>
+
+
+  </div>  
+<p></p>
+  <p>Ficamos à disposição para qualquer dúvida ou suporte necessário. Obrigado pela confiança em nossa solução.</p>   
+@endsection
+
+
+
