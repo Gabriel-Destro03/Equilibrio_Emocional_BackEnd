@@ -205,6 +205,23 @@ class UsuarioService {
         }
     }
 
+    async changeStatus(id, status){
+        if (!id) {
+            throw new Error('ID do usuário é obrigatório')
+        }
+
+        try {
+            const usuario = await this.repository.getUsuarioById(id)
+            if (!usuario) {
+                throw new Error('Usuário não encontrado')
+            }
+
+            return await this.repository.inactivateUsuario(id, status)
+        } catch (error) {
+            throw new Error(`Erro ao inativar usuário: ${error.message}`)
+        }
+    }
+
     /**
      * Inativa um usuário
      * @param {number} id - ID do usuário

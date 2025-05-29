@@ -168,6 +168,33 @@ Route.group(() => {
 
   /**
    * @swagger
+   * /api/usuarios/{id}/status:
+   *   put:
+   *     tags:
+   *       - Usuários
+   *     summary: Altera o status de um usuário
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - name: id
+   *         in: path
+   *         required: true
+   *         type: integer
+   *         description: ID do usuário
+   *     responses:
+   *       200:
+   *         description: Status do usuário atualizado com sucesso
+   *       400:
+   *         description: Erro ao atualizar status do usuário
+   *       401:
+   *         description: Não autorizado
+   *       404:
+   *         description: Usuário não encontrado
+   */
+  Route.put('/:id/status', 'Api/UsuarioController.changeStatus')
+
+  /**
+   * @swagger
    * /api/usuarios/{id}:
    *   delete:
    *     tags:
@@ -193,4 +220,4 @@ Route.group(() => {
    */
   Route.delete('/:id', 'Api/UsuarioController.destroy')
 })
-.prefix('/api/usuarios') 
+.prefix('/api/usuarios')

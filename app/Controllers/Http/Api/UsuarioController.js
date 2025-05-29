@@ -72,6 +72,24 @@ class UsuarioController {
     }
 
     /**
+     * Altera o status do usuário
+     */
+    async changeStatus({ params, response }) {
+        try {
+            const usuario = await this.service.getUsuarioById(params.id)
+            if (!usuario) {
+                return response.status(404).json({ error: 'Usuário não encontrado' })
+            }
+
+            const novoStatus = !usuario.status
+            const usuarioAtualizado = await this.service.changeStatus(params.id, novoStatus)
+            return response.status(200).json(usuarioAtualizado)
+        } catch (error) {
+            return response.status(400).json({ error: error.message })
+        }
+    }
+
+    /**
      * Inativa um usuário
      */
     async destroy({ params, response }) {

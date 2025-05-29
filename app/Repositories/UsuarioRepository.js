@@ -11,7 +11,6 @@ class UsuarioRepository {
         const { data, error } = await this.supabase
             .from('usuarios')
             .select('*')
-            .eq('status', true)
 
         if (error) throw new Error(error.message)
         return data
@@ -78,10 +77,10 @@ class UsuarioRepository {
         return data
     }
 
-    async inactivateUsuario(id) {
+    async inactivateUsuario(id, status) {
         const { data, error } = await this.supabase
             .from('usuarios')
-            .update({ status: false })
+            .update({ status })
             .eq('id', id)
             .select()
             .single()
