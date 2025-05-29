@@ -2,25 +2,25 @@
 
 const Config = use('Config')
 
-class PerguntaRepository {
+class RespostaRepository {
     constructor() {
         this.supabase = Config.get('supabase').client
     }
 
-    async getAllPerguntas() {
+    async getAllRespostas() {
         const { data, error } = await this.supabase
-            .from('perguntas')
-            .select('*, respostas(*)')
+            .from('respostas')
+            .select('*')
             .eq('status', true)
 
         if (error) throw new Error(error.message)
         return data
     }
 
-    async getPerguntaById(id) {
+    async getRespostaById(id) {
         const { data, error } = await this.supabase
-            .from('perguntas')
-            .select('*, respostas(*)')
+            .from('respostas')
+            .select('*')
             .eq('id', id)
             .eq('status', true)
             .single()
@@ -29,35 +29,46 @@ class PerguntaRepository {
         return data
     }
 
-    async createPergunta(perguntaData) {
+    async getRespostasByPerguntaId(perguntaId) {
         const { data, error } = await this.supabase
-            .from('perguntas')
-            .insert([{ ...perguntaData, status: true }])
-            .select('*, respostas(*)')
+            .from('respostas')
+            .select('*')
+            .eq('id_pergunta', perguntaId)
+            .eq('status', true)
+
+        if (error) throw new Error(error.message)
+        return data
+    }
+
+    async createResposta(respostaData) {
+        const { data, error } = await this.supabase
+            .from('respostas')
+            .insert([{ ...respostaData, status: true }])
+            .select()
             .single()
 
         if (error) throw new Error(error.message)
         return data
     }
 
-    async updatePergunta(id, perguntaData) {
+    async updateResposta(id, respostaData) {
         const { data, error } = await this.supabase
-            .from('perguntas')
-            .update(perguntaData)
+            .from('respostas')
+            .update(respostaData)
             .eq('id', id)
-            .select('*, respostas(*)')
+            .select()
             .single()
 
         if (error) throw new Error(error.message)
         return data
     }
 
-    async inactivatePergunta(id) {
+    async inactivateResposta(id) {
         const { data, error } = await this.supabase
-            .from('perguntas')
+            .from('respostas')
             .update({ status: false })
             .eq('id', id)
-            .select('*, respostas(*)')
+            .select()
             .single()
 
         if (error) throw new Error(error.message)
@@ -65,4 +76,4 @@ class PerguntaRepository {
     }
 }
 
-module.exports = PerguntaRepository 
+module.exports = RespostaRepository 

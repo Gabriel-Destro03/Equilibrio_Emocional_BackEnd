@@ -1,15 +1,34 @@
 'use strict'
 
 const PerguntaRepository = require('../Repositories/PerguntaRepository')
+const RespostaRepository = require('../Repositories/RespostaRepository')
 
 class PerguntaService {
     constructor() {
         this.repository = new PerguntaRepository()
+        this.respostaRepository = new RespostaRepository()
+    }
+
+    formatResposta(resposta) {
+        return {
+            id: resposta.id,
+            descricao: resposta.descricao
+        }
     }
 
     async getAllPerguntas() {
         try {
-            return await this.repository.getAllPerguntas()
+            const perguntas = await this.repository.getAllPerguntas()
+            const perguntasComRespostas = await Promise.all(
+                perguntas.map(async (pergunta) => {
+                    const respostas = await this.respostaRepository.getRespostasByPerguntaId(pergunta.id)
+                    return {
+                        ...pergunta,
+                        respostas: respostas.map(this.formatResposta)
+                    }
+                })
+            )
+            return perguntasComRespostas
         } catch (error) {
             throw new Error(`Erro ao buscar perguntas: ${error.message}`)
         }
@@ -25,7 +44,11 @@ class PerguntaService {
             if (!pergunta) {
                 throw new Error('Pergunta não encontrada')
             }
-            return pergunta
+            const respostas = await this.respostaRepository.getRespostasByPerguntaId(id)
+            return {
+                ...pergunta,
+                respostas: respostas.map(this.formatResposta)
+            }
         } catch (error) {
             throw new Error(`Erro ao buscar pergunta: ${error.message}`)
         }
@@ -43,11 +66,15 @@ class PerguntaService {
         }
 
         try {
-            return await this.repository.createPergunta({
+            const pergunta = await this.repository.createPergunta({
                 descricao,
                 categoria,
                 status: true
             })
+            return {
+                ...pergunta,
+                respostas: []
+            }
         } catch (error) {
             throw new Error(`Erro ao criar pergunta: ${error.message}`)
         }
@@ -74,7 +101,12 @@ class PerguntaService {
                 throw new Error('Pergunta não encontrada')
             }
 
-            return await this.repository.updatePergunta(id, perguntaData)
+            const perguntaAtualizada = await this.repository.updatePergunta(id, perguntaData)
+            const respostas = await this.respostaRepository.getRespostasByPerguntaId(id)
+            return {
+                ...perguntaAtualizada,
+                respostas: respostas.map(this.formatResposta)
+            }
         } catch (error) {
             throw new Error(`Erro ao atualizar pergunta: ${error.message}`)
         }
@@ -91,7 +123,12 @@ class PerguntaService {
                 throw new Error('Pergunta não encontrada')
             }
 
-            return await this.repository.inactivatePergunta(id)
+            const perguntaInativada = await this.repository.inactivatePergunta(id)
+            const respostas = await this.respostaRepository.getRespostasByPerguntaId(id)
+            return {
+                ...perguntaInativada,
+                respostas: respostas.map(this.formatResposta)
+            }
         } catch (error) {
             throw new Error(`Erro ao inativar pergunta: ${error.message}`)
         }
