@@ -82,7 +82,7 @@ class UsuarioService {
      * @throws {Error} Erro ao criar usuário ou dados inválidos
      */
     async createUsuario(usuarioData) {
-        const { nome_completo, email, telefone, cargo } = usuarioData
+        const { nome_completo, email, telefone, cargo, id_filial, id_departamento } = usuarioData
 
 
         if (!nome_completo || !email || !telefone || !cargo) {
@@ -124,7 +124,9 @@ class UsuarioService {
                 email,
                 telefone,
                 cargo,
-                uid: authUser.user.id
+                uid: authUser.user.id,
+                id_filial,
+                id_departamento
             })
 
             try {

@@ -44,9 +44,29 @@ class UsuarioRepository {
         try {
             const { data, error } = await this.supabase
                 .from('usuarios')
-                .insert([{ ...usuarioData, status: true }])
+                .insert([{ 
+                    nome_completo: usuarioData.nome_completo,
+                    email: usuarioData.email,
+                    telefone: usuarioData.telefone,
+                    cargo: usuarioData.cargo,
+                    status: true,
+                    uid: usuarioData.uid
+                }])
                 .select('*')
                 .single()
+                
+            await this.supabase.from('usuario_filial')
+            .insert([{
+                id_usuario: data.id,
+                id_filial: usuarioData.id_filial
+            }]);
+
+            await this.supabase.from('usuario_departamento')
+            .insert([{
+                id_usuario: data.id,
+                id_departamento: usuarioData.id_departamento
+            }])
+
 
             if (error) {
                 console.error('Erro ao criar usuário no banco:', error)
