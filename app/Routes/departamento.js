@@ -178,5 +178,32 @@ Route.group(() => {
    *         description: Departamento não encontrado
    */
   Route.delete('/:id', 'Api/DepartamentoController.destroy')
+
+  /**
+   * @swagger
+   * /api/departamentos/{id}/status:
+   *   put:
+   *     tags:
+   *       - Departamentos
+   *     summary: Altera o status de um departamento
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - name: id
+   *         in: path
+   *         required: true
+   *         type: integer
+   *         description: ID do departamento
+   *     responses:
+   *       200:
+   *         description: Status do departamento atualizado com sucesso
+   *       400:
+   *         description: Erro ao atualizar status do departamento
+   *       401:
+   *         description: Não autorizado
+   *       404:
+   *         description: Departamento não encontrado
+   */
+  Route.put('/:id/status', 'Api/DepartamentoController.changeStatus')
 })
 .prefix('/api/departamentos')

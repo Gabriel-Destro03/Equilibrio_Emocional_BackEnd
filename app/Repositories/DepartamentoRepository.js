@@ -19,7 +19,6 @@ class DepartamentoRepository {
                     endereco
                 )
             `)
-            .eq('status', true)
 
         if (error) throw new Error(error.message)
         return data
@@ -38,7 +37,6 @@ class DepartamentoRepository {
                 )
             `)
             .eq('id', id)
-            .eq('status', true)
             .single()
 
         if (error) throw new Error(error.message)
@@ -58,7 +56,6 @@ class DepartamentoRepository {
                 )
             `)
             .eq('filial_id', filialId)
-            .eq('status', true)
 
         if (error) throw new Error(error.message)
         return data

@@ -99,6 +99,23 @@ class DepartamentoService {
             throw new Error(`Erro ao inativar departamento: ${error.message}`)
         }
     }
+
+    async changeStatus(id, novoStatus) {
+        if (!id) {
+            throw new Error('ID do departamento é obrigatório')
+        }
+
+        try {
+            const departamento = await this.repository.getDepartamentoById(id)
+            if (!departamento) {
+                throw new Error('Departamento não encontrado')
+            }
+
+            return await this.repository.updateDepartamento(id, { status: novoStatus })
+        } catch (error) {
+            throw new Error(`Erro ao alterar status do departamento: ${error.message}`)
+        }
+    }
 }
 
 module.exports = DepartamentoService 

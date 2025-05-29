@@ -80,6 +80,24 @@ class DepartamentoController {
             return response.status(400).json({ error: error.message })
         }
     }
+
+    /**
+     * Altera o status do departamento
+     */
+    async changeStatus({ params, response }) {
+        try {
+            const departamento = await this.service.getDepartamentoById(params.id)
+            if (!departamento) {
+                return response.status(404).json({ error: 'Departamento não encontrado' })
+            }
+
+            const novoStatus = !departamento.status
+            const departamentoAtualizado = await this.service.changeStatus(params.id, novoStatus)
+            return response.status(200).json(departamentoAtualizado)
+        } catch (error) {
+            return response.status(400).json({ error: error.message })
+        }
+    }
 }
 
 module.exports = DepartamentoController 
