@@ -36,6 +36,7 @@
     "lucid-mongo": "^3.1.6",
     "node-excel-export": "^1.4.4",
     "require-all": "^3.0.0",
+    "resend": "^4.5.1",
     "swagger-jsdoc": "^3.3.0",
     "xlsx": "^0.18.5"
   },

@@ -1,4 +1,5 @@
 const { SupabaseAuthRepository } = require('../Repositories/SupabaseAuthRepository')
+const SendEmail = require('./Emails/SendEmail')
 
 class SupabaseAuthService {
   constructor() {
@@ -8,8 +9,12 @@ class SupabaseAuthService {
   async getAllUsers() {
     try {
       const users = await this.repository.getUsers()
+
+      var result = await SendEmail.sendWelcomeEmail('gdestro@3xsolutions.com.br', 'Gabriel', '12345678');
+      console.log(result)
       return users
     } catch (error) {
+      console.log(error)
       throw error
     }
   }
