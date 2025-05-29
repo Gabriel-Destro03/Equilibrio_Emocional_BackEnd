@@ -159,5 +159,32 @@ Route.group(() => {
    *         description: Filial não encontrada
    */
   Route.delete('/:id', 'Api/FilialController.destroy')
+
+  /**
+   * @swagger
+   * /api/filiais/{id}/status:
+   *   put:
+   *     tags:
+   *       - Filiais
+   *     summary: Altera o status de uma filial
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - name: id
+   *         in: path
+   *         required: true
+   *         type: integer
+   *         description: ID da filial
+   *     responses:
+   *       200:
+   *         description: Status da filial atualizado com sucesso
+   *       400:
+   *         description: Erro ao atualizar status da filial
+   *       401:
+   *         description: Não autorizado
+   *       404:
+   *         description: Filial não encontrada
+   */
+  Route.put('/:id/status', 'Api/FilialController.changeStatus')
 })
 .prefix('/api/filiais')

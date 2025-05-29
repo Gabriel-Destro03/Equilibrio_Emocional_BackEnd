@@ -11,7 +11,6 @@ class FilialRepository {
         const { data, error } = await this.supabase
             .from('filiais')
             .select('*')
-            .eq('status', true)
 
         if (error) throw new Error(error.message)
         return data
@@ -22,7 +21,6 @@ class FilialRepository {
             .from('filiais')
             .select('*')
             .eq('id', id)
-            .eq('status', true)
             .single()
 
         if (error) throw new Error(error.message)

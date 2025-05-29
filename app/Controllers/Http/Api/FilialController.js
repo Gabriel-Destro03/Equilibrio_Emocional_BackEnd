@@ -68,6 +68,24 @@ class FilialController {
             return response.status(400).json({ error: error.message })
         }
     }
+
+    /**
+     * Altera o status da filial
+     */
+    async changeStatus({ params, response }) {
+        try {
+            const filial = await this.service.getFilialById(params.id)
+            if (!filial) {
+                return response.status(404).json({ error: 'Filial não encontrada' })
+            }
+
+            const novoStatus = !filial.status
+            const filialAtualizada = await this.service.changeStatus(params.id, novoStatus)
+            return response.status(200).json(filialAtualizada)
+        } catch (error) {
+            return response.status(400).json({ error: error.message })
+        }
+    }
 }
 
 module.exports = FilialController 

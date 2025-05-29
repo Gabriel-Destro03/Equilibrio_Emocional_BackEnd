@@ -96,6 +96,23 @@ class FilialService {
             throw new Error(`Erro ao inativar filial: ${error.message}`)
         }
     }
+
+    async changeStatus(id, novoStatus) {
+        if (!id) {
+            throw new Error('ID da filial é obrigatório')
+        }
+
+        try {
+            const filial = await this.repository.getFilialById(id)
+            if (!filial) {
+                throw new Error('Filial não encontrada')
+            }
+
+            return await this.repository.updateFilial(id, { status: novoStatus })
+        } catch (error) {
+            throw new Error(`Erro ao alterar status da filial: ${error.message}`)
+        }
+    }
 }
 
 module.exports = FilialService 
