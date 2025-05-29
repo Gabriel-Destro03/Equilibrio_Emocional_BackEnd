@@ -19,9 +19,5 @@ Route.get('/', ({ request }) => {
   return { greeting: 'Hello world in JSON' }
 })
 
-// Supabase Auth Routes
-const supabaseAuth = require('../app/Routes/supabaseAuth')
-Route.get('/auth/users', supabaseAuth.getUsers)
-Route.get('/auth/users/:id', supabaseAuth.getUserById)
 
 use('require-all')(`${use('Helpers').appRoot()}/app/Routes`)
