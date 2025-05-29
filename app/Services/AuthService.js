@@ -72,12 +72,20 @@ class AuthService {
      * @returns {Array} Formatted filiais data
      */
     formatFiliaisData(filiais) {
+
+        //return filiais;
+
         return filiais.map(filial => ({
+            idFilial: filial.filial.id,
             cnpj: filial.filial.cnpj,
             endereco: filial.filial.endereco,
             nome_filial: filial.filial.nome_filial,
             is_representante: filial.is_representante,
-            departamentos: filial.filial.departamentos.map(d => d.nome_departamento) || []
+            departamentos: filial.filial.departamentos.map(d => ({
+                id: d.id,
+                id_filial: d.id_filial,
+                nome: d.nome_departamento
+            })) || []
         }))
     }
 

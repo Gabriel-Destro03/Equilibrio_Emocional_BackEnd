@@ -11,6 +11,7 @@ class UsuarioRepository {
         const { data, error } = await this.supabase
             .from('usuarios')
             .select('*')
+            .order('id', { ascending: false })
 
         if (error) throw new Error(error.message)
         return data
@@ -18,11 +19,11 @@ class UsuarioRepository {
 
     async getUsuarioById(id) {
         const { data, error } = await this.supabase
-            .from('usuarios')
-            .select('*')
-            .eq('id', id)
-            .eq('status', true)
-            .single()
+        .from('usuarios')
+        .select('*')
+        .eq('id', id)
+        .order('id', { ascending: false })
+        .single()
 
         if (error) throw new Error(error.message)
         return data
@@ -34,6 +35,7 @@ class UsuarioRepository {
             .select('*')
             .eq('email', email)
             .eq('status', true)
+            .order('id', { ascending: false })
             .limit(1)
 
         if (error) throw new Error(error.message)
@@ -53,6 +55,7 @@ class UsuarioRepository {
                     uid: usuarioData.uid
                 }])
                 .select('*')
+                .order('id', { ascending: false })
                 .single()
                 
             await this.supabase.from('usuario_filial')
@@ -92,19 +95,31 @@ class UsuarioRepository {
             .eq('id', id)
             .select()
             .single()
+            .order('id', { ascending: false })
 
         if (error) throw new Error(error.message)
         return data
     }
 
-    async inactivateUsuario(id, status) {
+    async inactivateUsuario(id) {
+        const { data: usuario, error: fetchError } = await this.supabase
+            .from('usuarios')
+            .select('status')
+            .eq('id', id)
+            .single()
+            .order('id', { ascending: false })
+
+        if (fetchError) throw new Error(fetchError.message)
+        if (!usuario) throw new Error('Usuário não encontrado')
+
         const { data, error } = await this.supabase
             .from('usuarios')
-            .update({ status })
+            .update({ status: !usuario.status })
             .eq('id', id)
             .select()
             .single()
-
+            .order('id', { ascending: false })
+            
         if (error) throw new Error(error.message)
         return data
     }

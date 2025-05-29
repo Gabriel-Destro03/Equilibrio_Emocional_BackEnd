@@ -2,9 +2,13 @@
 
 const JornadaService = require('../../../Services/JornadaService')
 
+const N8nClient = use('App/Services/n8n/N8nClient')
+
+
 class JornadaController {
     constructor() {
         this.service = new JornadaService()
+        this.n8nClient = new N8nClient()
     }
 
     /**
@@ -37,6 +41,15 @@ class JornadaController {
     async store({ request, response }) {
         try {
             const jornadaData = request.only(['emocao', 'reflexao', 'uid', 'respostas'])
+
+            // const analise = await this.n8nClient.sendAnaliseFeedback({
+            //     emotion,
+            //     reflexao,
+            //     answers,
+            //     uid
+            // })
+
+
             const jornada = await this.service.createJornada(jornadaData)
             return response.status(201).json(jornada)
         } catch (error) {

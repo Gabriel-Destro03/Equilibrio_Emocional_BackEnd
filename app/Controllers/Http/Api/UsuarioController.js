@@ -77,12 +77,12 @@ class UsuarioController {
     async changeStatus({ params, response }) {
         try {
             const usuario = await this.service.getUsuarioById(params.id)
+
             if (!usuario) {
                 return response.status(404).json({ error: 'Usuário não encontrado' })
             }
 
-            const novoStatus = !usuario.status
-            const usuarioAtualizado = await this.service.changeStatus(params.id, novoStatus)
+            const usuarioAtualizado = await this.service.changeStatus(params.id)
             return response.status(200).json(usuarioAtualizado)
         } catch (error) {
             return response.status(400).json({ error: error.message })
@@ -94,8 +94,8 @@ class UsuarioController {
      */
     async destroy({ params, response }) {
         try {
-            await this.service.inactivateUsuario(params.id)
-            return response.status(200).json({ message: 'Usuário inativado com sucesso' })
+            const usuarioAtualizado = await this.service.inactivateUsuario(params.id)
+            return response.status(200).json(usuarioAtualizado)
         } catch (error) {
             return response.status(400).json({ error: error.message })
         }

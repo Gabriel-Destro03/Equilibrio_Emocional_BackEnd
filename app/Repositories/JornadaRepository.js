@@ -46,8 +46,6 @@ class JornadaRepository {
 
     async createJornada(jornadaData) {
         try {
-            console.log('Dados recebidos para criação da jornada:', JSON.stringify(jornadaData, null, 2))
-
             // Validação dos dados antes de inserir
             if (!jornadaData.emocao) {
                 throw new Error('Campo emocao é obrigatório')
@@ -84,8 +82,6 @@ class JornadaRepository {
                 uid: jornadaData.uid
             }
 
-            console.log('Dados preparados para inserção:', JSON.stringify(dadosParaInserir, null, 2))
-
             // Tenta criar a jornada
             const { data: jornada, error: jornadaError } = await this.supabase
                 .from('jornada')
@@ -93,12 +89,6 @@ class JornadaRepository {
                 .select()
                 .single()
 
-            // Log detalhado do resultado
-            console.log('Resposta do Supabase:', {
-                data: jornada,
-                error: jornadaError,
-                status: jornadaError ? 'erro' : 'sucesso'
-            })
 
             if (jornadaError) {
                 console.error('Erro detalhado do Supabase:', {
@@ -115,7 +105,6 @@ class JornadaRepository {
                 throw new Error('Jornada não foi criada corretamente - nenhum dado retornado')
             }
 
-            console.log('Jornada criada com sucesso:', JSON.stringify(jornada, null, 2))
             return jornada
         } catch (error) {
             console.error('Erro detalhado ao criar jornada:', {
@@ -130,8 +119,6 @@ class JornadaRepository {
 
     async createJornadaRespostas(respostas) {
         try {
-            console.log('Dados recebidos para criação das respostas:', JSON.stringify(respostas, null, 2))
-
             if (!Array.isArray(respostas) || respostas.length === 0) {
                 throw new Error('Respostas deve ser um array não vazio')
             }
@@ -171,8 +158,6 @@ class JornadaRepository {
                 })
                 throw new Error(`Erro ao criar respostas: ${error.message || 'Erro desconhecido'}`)
             }
-
-            console.log('Respostas criadas com sucesso:', JSON.stringify(data, null, 2))
             return data
         } catch (error) {
             console.error('Erro detalhado ao criar respostas:', {

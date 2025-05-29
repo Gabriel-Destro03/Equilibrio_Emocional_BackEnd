@@ -1,14 +1,18 @@
 'use strict'
 
-const JornadaRepository = use('App/Repositories/JornadaRepository')
-const AvaliacaoEmocionalService = use('App/Services/AvaliacaoEmocionalService')
-const N8nClient = use('App/Services/n8n/N8nClient')
+const JornadaRepository = require('../Repositories/JornadaRepository')
+const AvaliacaoEmocionalService = require('./AvaliacaoEmocionalService')
+const N8nClient = require('./n8n/N8nClient')
+const PerguntaRepository = require('../Repositories/PerguntaRepository')
+const RespostaRepository = require('../Repositories/RespostaRepository')
 
 class JornadaService {
     constructor() {
         this.repository = new JornadaRepository()
         this.avaliacaoService = new AvaliacaoEmocionalService()
         this.n8nClient = new N8nClient()
+        this.perguntaRepository = new PerguntaRepository()
+        this.respostaRepository = new RespostaRepository()
     }
 
     async getAllJornadas() {
@@ -37,10 +41,38 @@ class JornadaService {
         }
     }
 
+    async formatarRespostasParaAnalise(jornadaRespostas) {
+        // Busca todas as perguntas e respostas de uma vez
+        const [todasPerguntas, todasRespostas] = await Promise.all([
+            this.perguntaRepository.getAllPerguntas(),
+            this.respostaRepository.getAllRespostas()
+        ])
+
+        // Cria mapas para acesso rápido
+        const mapaPerguntas = todasPerguntas.reduce((map, pergunta) => {
+            map[pergunta.id] = pergunta
+            return map
+        }, {})
+
+        const mapaRespostas = todasRespostas.reduce((map, resposta) => {
+            map[resposta.id] = resposta
+            return map
+        }, {})
+
+        // Formata as respostas usando os mapas
+        return jornadaRespostas.map(jr => {
+            const pergunta = mapaPerguntas[jr.id_perguntas]
+            const resposta = mapaRespostas[jr.id_resposta]
+            
+            return {
+                question: pergunta?.descricao || 'Pergunta não encontrada',
+                answer: resposta?.descricao || 'Resposta não encontrada'
+            }
+        })
+    }
+
     async createJornada(jornadaData) {
         try {
-            console.log('Iniciando criação da jornada com dados:', jornadaData)
-
             // Validação dos dados da jornada
             if (!jornadaData.emocao) {
                 throw new Error('Campo emocao é obrigatório')
@@ -51,12 +83,9 @@ class JornadaService {
 
             // Cria a jornada
             const jornada = await this.repository.createJornada(jornadaData)
-            console.log('Jornada criada com sucesso:', jornada)
 
             // Se houver respostas, cria as respostas da jornada
             if (jornadaData.respostas && Array.isArray(jornadaData.respostas) && jornadaData.respostas.length > 0) {
-                console.log('Iniciando criação das respostas da jornada:', jornadaData.respostas)
-
                 // Prepara os dados das respostas
                 const respostasParaCriar = jornadaData.respostas.map(resposta => {
                     if (!resposta.id_pergunta) {
@@ -72,50 +101,14 @@ class JornadaService {
                         id_resposta: resposta.id_resposta
                     }
                 })
-
-                console.log('Dados das respostas preparados:', respostasParaCriar)
-
                 // Cria as respostas
                 const respostas = await this.repository.createJornadaRespostas(respostasParaCriar)
-                console.log('Respostas criadas com sucesso:', respostas)
 
                 // Adiciona as respostas ao objeto da jornada
-                jornada.respostas = respostas
+                //jornada.respostas = respostas
             }
 
             // Envia para análise de feedback
-            try {
-                console.log('Enviando para análise de feedback...')
-                const analiseFeedback = await this.n8nClient.sendAnaliseFeedback(jornada)
-                console.log('Análise de feedback recebida:', analiseFeedback)
-
-                // Salva a avaliação emocional
-                if (analiseFeedback.avaliacao_emocional) {
-                    console.log('Salvando avaliação emocional...')
-                    await this.avaliacaoService.createAvaliacaoEmocional({
-                        uid: jornada.uid,
-                        ...analiseFeedback.avaliacao_emocional
-                    })
-                }
-
-                // Salva as atividades emocionais
-                if (analiseFeedback.atividades_emocionais && analiseFeedback.atividades_emocionais.length > 0) {
-                    console.log('Salvando atividades emocionais...')
-                    await this.avaliacaoService.createAtividadesEmocionais(
-                        analiseFeedback.atividades_emocionais.map(atividade => ({
-                            uid: jornada.uid,
-                            ...atividade
-                        }))
-                    )
-                }
-
-                // Adiciona a análise ao objeto da jornada
-                jornada.analise_feedback = analiseFeedback
-            } catch (analiseError) {
-                console.error('Erro ao processar análise de feedback:', analiseError)
-                // Não propaga o erro para não impedir a criação da jornada
-            }
-
             return jornada
         } catch (error) {
             console.error('Erro ao criar jornada:', error)

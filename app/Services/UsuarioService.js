@@ -207,7 +207,7 @@ class UsuarioService {
         }
     }
 
-    async changeStatus(id, status){
+    async changeStatus(id){
         if (!id) {
             throw new Error('ID do usuário é obrigatório')
         }
@@ -218,7 +218,7 @@ class UsuarioService {
                 throw new Error('Usuário não encontrado')
             }
 
-            return await this.repository.inactivateUsuario(id, status)
+            return await this.repository.inactivateUsuario(id)
         } catch (error) {
             throw new Error(`Erro ao inativar usuário: ${error.message}`)
         }
@@ -236,11 +236,6 @@ class UsuarioService {
         }
 
         try {
-            const usuario = await this.repository.getUsuarioById(id)
-            if (!usuario) {
-                throw new Error('Usuário não encontrado')
-            }
-
             return await this.repository.inactivateUsuario(id)
         } catch (error) {
             throw new Error(`Erro ao inativar usuário: ${error.message}`)

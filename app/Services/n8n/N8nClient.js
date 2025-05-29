@@ -51,6 +51,7 @@ class N8nClient {
      */
     async sendAnaliseFeedback(analiseInput) {
         try {
+            
             const body = JSON.stringify({
                 userId: analiseInput.uid,
                 date: new Date(),
@@ -60,7 +61,7 @@ class N8nClient {
                 'user-reflectionsAnswer': analiseInput.reflexao,
                 answers: analiseInput.answers
             })
-
+            
             const response = await fetch(this.n8nUrlIA, {
                 method: 'POST',
                 headers: {
@@ -68,7 +69,7 @@ class N8nClient {
                 },
                 body
             })
-
+            
             if (!response.ok) {
                 console.error('Erro na resposta da API:', response.status, response.statusText)
                 throw new Error('Erro ao enviar mensagem')
