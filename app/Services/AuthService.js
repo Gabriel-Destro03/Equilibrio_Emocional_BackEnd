@@ -1,3 +1,5 @@
+'use strict'
+
 const { AuthRepository } = require('../Repositories/AuthRepository')
 const TokenService = require('./tokens/TokenService')
 
@@ -35,6 +37,35 @@ class AuthService {
         } catch (error) {
             console.error('Login error:', error)
             throw error
+        }
+    }
+
+    /**
+     * Cria um novo usuário no sistema de autenticação
+     * @param {string} email - Email do usuário
+     * @param {string} password - Senha do usuário
+     * @returns {Promise<Object>} Dados do usuário criado
+     * @throws {Error} Erro ao criar usuário
+     */
+    async signUp(email, password) {
+        try {
+            console.log('AuthService: Iniciando signUp para email:', email)
+            
+            if (!email || !password) {
+                throw new Error('Email e senha são obrigatórios')
+            }
+
+            const auth = await this.repository.signUp(email, password)
+            console.log('AuthService: Resposta do signUp:', auth)
+
+            if (!auth || !auth.user) {
+                throw new Error('Erro ao criar usuário no sistema de autenticação')
+            }
+
+            return auth
+        } catch (error) {
+            console.error('AuthService: Erro no signUp:', error)
+            throw new Error(`Erro ao criar usuário: ${error.message}`)
         }
     }
 

@@ -1,0 +1,90 @@
+'use strict'
+
+const UsuarioService = require('../../../Services/UsuarioService')
+
+class UsuarioController {
+    constructor() {
+        this.service = new UsuarioService()
+    }
+
+    /**
+     * Lista todos os usuários ativos
+     */
+    async index({ response }) {
+        try {
+            const usuarios = await this.service.getAllUsuarios()
+            return response.status(200).json(usuarios)
+        } catch (error) {
+            return response.status(400).json({ error: error.message })
+        }
+    }
+
+    /**
+     * Busca um usuário específico
+     */
+    async show({ params, response }) {
+        try {
+            const usuario = await this.service.getUsuarioById(params.id)
+            return response.status(200).json(usuario)
+        } catch (error) {
+            return response.status(400).json({ error: error.message })
+        }
+    }
+
+    /**
+     * Busca um usuário por email
+     */
+    async getByEmail({ params, response }) {
+        try {
+            const usuario = await this.service.getUsuarioByEmail(params.email)
+            return response.status(200).json(usuario)
+        } catch (error) {
+            return response.status(400).json({ error: error.message })
+        }
+    }
+
+    /**
+     * Cria um novo usuário
+     */
+    async store({ request, response }) {
+        try {
+            console.log('Headers:', request.headers())
+            console.log('Request Data:', request.all())
+            
+            const usuarioData = request.only(['nome_completo', 'email', 'telefone', 'cargo'])
+            console.log('Dados extraídos:', usuarioData)
+            
+            const usuario = await this.service.createUsuario(usuarioData)
+            return response.status(201).json(usuario)
+        } catch (error) {
+            return response.status(400).json({ error: error.message })
+        }
+    }
+
+    /**
+     * Atualiza um usuário existente
+     */
+    async update({ params, request, response }) {
+        try {
+            const usuarioData = request.only(['nome_completo', 'email', 'telefone', 'cargo'])
+            const usuario = await this.service.updateUsuario(params.id, usuarioData)
+            return response.status(200).json(usuario)
+        } catch (error) {
+            return response.status(400).json({ error: error.message })
+        }
+    }
+
+    /**
+     * Inativa um usuário
+     */
+    async destroy({ params, response }) {
+        try {
+            await this.service.inactivateUsuario(params.id)
+            return response.status(200).json({ message: 'Usuário inativado com sucesso' })
+        } catch (error) {
+            return response.status(400).json({ error: error.message })
+        }
+    }
+}
+
+module.exports = UsuarioController 

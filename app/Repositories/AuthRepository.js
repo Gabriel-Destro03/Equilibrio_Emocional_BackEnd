@@ -1,9 +1,52 @@
+'use strict'
+
 const Config = use('Config')
 const TokenService = require('../Services/tokens/TokenService')
 
 class AuthRepository {
     constructor() {
         this.supabase = Config.get('supabase').client
+    }
+
+    /**
+     * Cria um novo usuário no sistema de autenticação
+     * @param {string} email - Email do usuário
+     * @param {string} password - Senha do usuário
+     * @returns {Promise<Object>} Dados do usuário criado
+     * @throws {Error} Erro ao criar usuário
+     */
+    async signUp(email, password) {
+        try {
+            console.log('AuthRepository: Iniciando signUp para email:', email)
+
+            if (!email || !password) {
+                throw new Error('Email e senha são obrigatórios')
+            }
+
+            const { data, error } = await this.supabase.auth.signUp({
+                email,
+                password,
+                options: {
+                    emailRedirectTo: `${process.env.FRONTEND_URL}/auth/callback`
+                }
+            })
+
+            console.log('AuthRepository: Resposta do Supabase:', { data, error })
+
+            if (error) {
+                console.error('AuthRepository: Erro do Supabase:', error)
+                throw new Error(error.message || 'Erro ao cadastrar usuário')
+            }
+
+            if (!data || !data.user) {
+                throw new Error('Dados do usuário não retornados pelo Supabase')
+            }
+
+            return data
+        } catch (error) {
+            console.error('AuthRepository: Erro no signUp:', error)
+            throw new Error(error.message || 'Erro ao cadastrar usuário')
+        }
     }
 
     /**
