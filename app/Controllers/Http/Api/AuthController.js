@@ -15,10 +15,8 @@ class AuthController {
    * @param {Response} ctx.response
    */
   async login({ request, response }) {
-    console.log('AuthController - Login method called')
     try {
       const { email, password } = request.all()
-      console.log('Login attempt for email:', email)
       
       // Validate required fields
       if (!email || !password) {
@@ -29,7 +27,6 @@ class AuthController {
       }
 
       const result = await this.authService.login(email, password)
-      console.log('Login successful for:', email)
       
       return response.json({
         success: true,
@@ -51,7 +48,6 @@ class AuthController {
    * @param {Response} ctx.response
    */
   async logout({ request, response }) {
-    console.log('AuthController - Logout method called')
     try {
       const token = request.header('Authorization')?.replace('Bearer ', '')
       
@@ -63,7 +59,6 @@ class AuthController {
       }
 
       const result = await this.authService.logout(token)
-      console.log('Logout successful')
       
       return response.json({
         success: true,
@@ -85,7 +80,6 @@ class AuthController {
    * @param {Response} ctx.response
    */
   async refresh({ request, response }) {
-    console.log('AuthController - Refresh method called')
     try {
       const { refresh_token } = request.all()
       

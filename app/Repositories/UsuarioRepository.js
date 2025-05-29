@@ -35,21 +35,35 @@ class UsuarioRepository {
             .select('*')
             .eq('email', email)
             .eq('status', true)
-            .single()
+            .limit(1)
 
         if (error) throw new Error(error.message)
-        return data
+        return data && data.length > 0 ? data[0] : null
     }
 
     async createUsuario(usuarioData) {
-        const { data, error } = await this.supabase
-            .from('usuarios')
-            .insert([{ ...usuarioData, status: true }])
-            .select()
-            .single()
+        try {
+            const { data, error } = await this.supabase
+                .from('usuarios')
+                .insert([{ ...usuarioData, status: true }])
+                .select('*')
+                .single()
 
-        if (error) throw new Error(error.message)
-        return data
+            if (error) {
+                console.error('Erro ao criar usuário no banco:', error)
+                throw new Error(error.message)
+            }
+
+            if (!data) {
+                console.error('Dados do usuário não retornados após criação')
+                throw new Error('Erro ao criar usuário: Dados não retornados')
+            }
+
+            return data
+        } catch (error) {
+            console.error('Erro na criação do usuário:', error)
+            throw error
+        }
     }
 
     async updateUsuario(id, usuarioData) {

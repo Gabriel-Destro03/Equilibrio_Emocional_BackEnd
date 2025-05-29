@@ -17,7 +17,6 @@ class AuthRepository {
      */
     async signUp(email, password) {
         try {
-            console.log('AuthRepository: Iniciando signUp para email:', email)
 
             if (!email || !password) {
                 throw new Error('Email e senha são obrigatórios')
@@ -30,8 +29,6 @@ class AuthRepository {
                     emailRedirectTo: `${process.env.FRONTEND_URL}/auth/callback`
                 }
             })
-
-            console.log('AuthRepository: Resposta do Supabase:', { data, error })
 
             if (error) {
                 console.error('AuthRepository: Erro do Supabase:', error)

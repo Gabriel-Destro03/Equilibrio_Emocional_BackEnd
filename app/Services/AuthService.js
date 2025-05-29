@@ -49,14 +49,11 @@ class AuthService {
      */
     async signUp(email, password) {
         try {
-            console.log('AuthService: Iniciando signUp para email:', email)
-            
             if (!email || !password) {
                 throw new Error('Email e senha são obrigatórios')
             }
 
             const auth = await this.repository.signUp(email, password)
-            console.log('AuthService: Resposta do signUp:', auth)
 
             if (!auth || !auth.user) {
                 throw new Error('Erro ao criar usuário no sistema de autenticação')

@@ -1,7 +1,7 @@
 'use strict'
 
 const UsuarioRepository = require('../Repositories/UsuarioRepository')
-const AuthService = require('./AuthService')
+const { AuthService } = require('./AuthService')
 const PasswordGenerator = require('../Utils/PasswordGenerator')
 const SendEmail = require('../Services/Emails/SendEmail')
 
@@ -11,6 +11,7 @@ const SendEmail = require('../Services/Emails/SendEmail')
 class UsuarioService {
     constructor() {
         this.repository = new UsuarioRepository()
+        this.authService = new AuthService()
     }
 
     /**
@@ -83,7 +84,6 @@ class UsuarioService {
     async createUsuario(usuarioData) {
         const { nome_completo, email, telefone, cargo } = usuarioData
 
-        console.log('Iniciando criação de usuário:', { nome_completo, email, telefone, cargo })
 
         if (!nome_completo || !email || !telefone || !cargo) {
             throw new Error('Todos os campos são obrigatórios')
@@ -103,28 +103,23 @@ class UsuarioService {
 
         try {
             // Verifica se já existe um usuário com o mesmo email
-            console.log('Verificando email existente:', email)
             const usuarioExistente = await this.repository.getUsuarioByEmail(email)
             if (usuarioExistente) {
                 throw new Error('Já existe um usuário com este email')
             }
 
             // Gera uma senha aleatória
-            console.log('Gerando senha aleatória')
             const password = PasswordGenerator.generatePassword()
             
             // Cria o usuário no sistema de autenticação
-            console.log('Criando usuário no sistema de autenticação')
-            const authUser = await AuthService.signUp(email, password)
-            console.log('Resposta do AuthService:', authUser)
+            const authUser = await this.authService.signUp(email, password)
 
             if (!authUser || !authUser.user || !authUser.user.id) {
                 throw new Error('Erro ao criar usuário no sistema de autenticação')
             }
 
             // Cria o usuário no banco de dados
-            console.log('Criando usuário no banco de dados')
-            const { data: usuario, error: userErr } = await this.repository.createUsuario({
+            const usuario = await this.repository.createUsuario({
                 nome_completo,
                 email,
                 telefone,
@@ -132,9 +127,12 @@ class UsuarioService {
                 uid: authUser.user.id
             })
 
-            if (userErr) {
-                console.error('Erro ao criar usuário no banco:', userErr)
-                throw new Error(`Erro ao criar usuário no banco de dados: ${userErr.message}`)
+            try {
+                // Envia email de boas-vindas com a senha
+                await SendEmail.sendWelcomeEmail(email, nome_completo, password)
+            } catch (emailError) {
+                console.error('Erro ao enviar email de boas-vindas:', emailError)
+                // Não interrompe o fluxo se o email falhar
             }
 
             if (!usuario) {
@@ -142,16 +140,6 @@ class UsuarioService {
                 throw new Error('Erro ao criar usuário: Dados não retornados')
             }
 
-            try {
-                // Envia email de boas-vindas com a senha
-                console.log('Enviando email de boas-vindas')
-                await SendEmail.sendWelcomeEmail(email, nome_completo, password)
-            } catch (emailError) {
-                console.error('Erro ao enviar email de boas-vindas:', emailError)
-                // Não interrompe o fluxo se o email falhar
-            }
-
-            console.log('Usuário criado com sucesso:', usuario)
             return usuario
         } catch (error) {
             console.error('Erro na criação do usuário:', error)

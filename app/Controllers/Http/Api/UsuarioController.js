@@ -48,11 +48,8 @@ class UsuarioController {
      */
     async store({ request, response }) {
         try {
-            console.log('Headers:', request.headers())
-            console.log('Request Data:', request.all())
             
             const usuarioData = request.only(['nome_completo', 'email', 'telefone', 'cargo'])
-            console.log('Dados extraídos:', usuarioData)
             
             const usuario = await this.service.createUsuario(usuarioData)
             return response.status(201).json(usuario)
