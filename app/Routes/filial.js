@@ -186,5 +186,30 @@ Route.group(() => {
    *         description: Filial não encontrada
    */
   Route.put('/:id/status', 'Api/FilialController.changeStatus')
+
+  /**
+   * @swagger
+   * /api/filiais/user/{uid}:
+   *   get:
+   *     tags:
+   *       - Filiais
+   *     summary: Lista todas as filiais de um usuário específico
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - name: uid
+   *         in: path
+   *         required: true
+   *         type: string
+   *         description: ID do usuário
+   *     responses:
+   *       200:
+   *         description: Lista de filiais do usuário retornada com sucesso
+   *       400:
+   *         description: Erro ao buscar filiais do usuário
+   *       401:
+   *         description: Não autorizado
+   */
+  Route.get('/user/:uid', 'Api/FilialController.getFiliaisByUser')
 })
 .prefix('/api/filiais')

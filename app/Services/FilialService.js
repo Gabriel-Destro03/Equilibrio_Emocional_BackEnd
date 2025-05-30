@@ -113,6 +113,18 @@ class FilialService {
             throw new Error(`Erro ao alterar status da filial: ${error.message}`)
         }
     }
+
+    async getFiliaisByUserId(uid) {
+        if (!uid) {
+            throw new Error('ID do usuário é obrigatório')
+        }
+
+        try {
+            return await this.repository.getFiliaisByUserId(uid)
+        } catch (error) {
+            throw new Error(`Erro ao buscar filiais do usuário: ${error.message}`)
+        }
+    }
 }
 
 module.exports = FilialService 

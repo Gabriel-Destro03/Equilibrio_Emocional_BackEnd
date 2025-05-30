@@ -241,6 +241,18 @@ class UsuarioService {
             throw new Error(`Erro ao inativar usuário: ${error.message}`)
         }
     }
+
+    async getUsuariosByFilial(uid) {
+        if (!uid) {
+            throw new Error('ID do usuário é obrigatório')
+        }
+
+        try {
+            return await this.repository.getUsuariosByFilial(uid)
+        } catch (error) {
+            throw new Error(`Erro ao buscar usuários da filial: ${error.message}`)
+        }
+    }
 }
 
 module.exports = UsuarioService 

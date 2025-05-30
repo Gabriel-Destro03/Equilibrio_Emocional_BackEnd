@@ -44,16 +44,16 @@ class DepartamentoService {
     }
 
     async createDepartamento(departamentoData) {
-        const { nome_departamento, filial_id } = departamentoData
+        const { nome_departamento, id_filial } = departamentoData
 
-        if (!nome_departamento || !filial_id) {
+        if (!nome_departamento || !id_filial) {
             throw new Error('Nome do departamento e ID da filial são obrigatórios')
         }
 
         try {
             return await this.repository.createDepartamento({
                 nome_departamento,
-                filial_id
+                id_filial
             })
         } catch (error) {
             throw new Error(`Erro ao criar departamento: ${error.message}`)
@@ -114,6 +114,18 @@ class DepartamentoService {
             return await this.repository.updateDepartamento(id, { status: novoStatus })
         } catch (error) {
             throw new Error(`Erro ao alterar status do departamento: ${error.message}`)
+        }
+    }
+
+    async getDepartamentosByUserId(uid) {
+        if (!uid) {
+            throw new Error('ID do usuário é obrigatório')
+        }
+
+        try {
+            return await this.repository.getDepartamentosByUserId(uid)
+        } catch (error) {
+            throw new Error(`Erro ao buscar departamentos do usuário: ${error.message}`)
         }
     }
 }

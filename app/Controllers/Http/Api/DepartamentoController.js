@@ -48,7 +48,8 @@ class DepartamentoController {
      */
     async store({ request, response }) {
         try {
-            const departamentoData = request.only(['nome_departamento', 'filial_id'])
+            const departamentoData = request.only(['nome_departamento', 'id_filial'])
+
             const departamento = await this.service.createDepartamento(departamentoData)
             return response.status(201).json(departamento)
         } catch (error) {
@@ -94,6 +95,18 @@ class DepartamentoController {
             const novoStatus = !departamento.status
             const departamentoAtualizado = await this.service.changeStatus(params.id, novoStatus)
             return response.status(200).json(departamentoAtualizado)
+        } catch (error) {
+            return response.status(400).json({ error: error.message })
+        }
+    }
+
+    /**
+     * Lista todos os departamentos de um usuário específico
+     */
+    async getDepartamentosByUser({ params, response }) {
+        try {
+            const departamentos = await this.service.getDepartamentosByUserId(params.uid)
+            return response.status(200).json(departamentos)
         } catch (error) {
             return response.status(400).json({ error: error.message })
         }

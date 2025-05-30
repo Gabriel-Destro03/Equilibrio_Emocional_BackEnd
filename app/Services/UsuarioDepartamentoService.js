@@ -67,7 +67,7 @@ class UsuarioDepartamentoService {
          }
 
          try {
-            return await this.repository.update(idUsuario, idDepartamento, { is_representante: updateData.is_representante })
+            return await this.repository.updateUsuarioDepartamento(idUsuario, idDepartamento, { is_representante: updateData.is_representante })
          } catch (error) {
             console.error('Erro ao atualizar usuario_departamento no service:', error.message)
             throw new Error(`Erro ao atualizar usuario_departamento: ${error.message}`)

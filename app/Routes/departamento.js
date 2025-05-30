@@ -205,5 +205,30 @@ Route.group(() => {
    *         description: Departamento não encontrado
    */
   Route.put('/:id/status', 'Api/DepartamentoController.changeStatus')
+
+  /**
+   * @swagger
+   * /api/departamentos/user/{uid}:
+   *   get:
+   *     tags:
+   *       - Departamentos
+   *     summary: Lista todos os departamentos de um usuário específico
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - name: uid
+   *         in: path
+   *         required: true
+   *         type: string
+   *         description: ID do usuário
+   *     responses:
+   *       200:
+   *         description: Lista de departamentos do usuário retornada com sucesso
+   *       400:
+   *         description: Erro ao buscar departamentos do usuário
+   *       401:
+   *         description: Não autorizado
+   */
+  Route.get('/user/:uid', 'Api/DepartamentoController.getDepartamentosByUser')
 })
 .prefix('/api/departamentos')

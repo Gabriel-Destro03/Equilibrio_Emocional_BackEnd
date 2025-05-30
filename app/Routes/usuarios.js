@@ -31,6 +31,31 @@ Route.group(() => {
 
   /**
    * @swagger
+   * /api/usuarios/filial/{uid}:
+   *   get:
+   *     tags:
+   *       - Usuários
+   *     summary: Lista todos os usuários das filiais que o usuário tem acesso
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - name: uid
+   *         in: path
+   *         required: true
+   *         type: string
+   *         description: ID do usuário
+   *     responses:
+   *       200:
+   *         description: Lista de usuários retornada com sucesso
+   *       400:
+   *         description: Erro ao buscar usuários
+   *       401:
+   *         description: Não autorizado
+   */
+  Route.get('/filial/:uid', 'Api/UsuarioController.getUsuariosByFilial')
+
+  /**
+   * @swagger
    * /api/usuarios/{id}:
    *   get:
    *     tags:

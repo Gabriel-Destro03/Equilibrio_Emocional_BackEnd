@@ -100,6 +100,18 @@ class UsuarioController {
             return response.status(400).json({ error: error.message })
         }
     }
+
+    /**
+     * Lista todos os usuários das filiais que o usuário tem acesso
+     */
+    async getUsuariosByFilial({ params, response }) {
+        try {
+            const usuarios = await this.service.getUsuariosByFilial(params.uid)
+            return response.status(200).json(usuarios)
+        } catch (error) {
+            return response.status(400).json({ error: error.message })
+        }
+    }
 }
 
 module.exports = UsuarioController 

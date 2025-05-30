@@ -86,6 +86,18 @@ class FilialController {
             return response.status(400).json({ error: error.message })
         }
     }
+
+    /**
+     * Lista todas as filiais de um usuário específico
+     */
+    async getFiliaisByUser({ params, response }) {
+        try {
+            const filiais = await this.service.getFiliaisByUserId(params.uid)
+            return response.status(200).json(filiais)
+        } catch (error) {
+            return response.status(400).json({ error: error.message })
+        }
+    }
 }
 
 module.exports = FilialController 
