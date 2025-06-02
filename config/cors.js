@@ -16,7 +16,7 @@ module.exports = {
   | Function - Receives the current origin and should return one of the above values.
   |
   */
-  origin: ['http://localhost:5173', 'http://127.0.0.1:3333', 'https://app.claraconecta.com.br', 'https://evolution-api-mentoria-clara-back.jy2yua.easypanel.host/'],
+  origin: ['https://app.claraconecta.com.br', 'https://evolution-api-mentoria-clara-back.jy2yua.easypanel.host'],
 
   /*
   |--------------------------------------------------------------------------
