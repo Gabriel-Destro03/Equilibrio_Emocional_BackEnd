@@ -91,7 +91,7 @@ class SendEmail {
     <body>
       <div class="container">
         <div class="logo">
-          <img src="https://app.claraconecta.com.br/APC1%20(2).png" alt="Clara Logo" />
+          <img src="https://app.claraconecta.com.br/logo.png" alt="Clara Logo" />
         </div>
         <h2>${title}</h2>
         ${html}
@@ -101,7 +101,7 @@ class SendEmail {
   </html>
       `
       const data = await this.resend.emails.send({
-        from: 'Clara Equilibrio Emocional <noreply@claraconecta.com.br>',
+        from: 'Clara Equilibrio Emocional <cadastro@claraconecta.com.br>',
         to,
         subject,
         html: body,

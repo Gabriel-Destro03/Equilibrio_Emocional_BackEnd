@@ -1,4 +1,4 @@
-FROM node:14
+FROM node:18
 
 # Criar diretório da aplicação
 WORKDIR /usr/src/app
@@ -14,7 +14,7 @@ RUN yarn install
 COPY . .
 
 # Expor porta
-EXPOSE 3333
+EXPOSE 80
 
 # Comando para iniciar a aplicação
-CMD [ "yarn", "start" ]
+CMD [ "yarn", "start" ]

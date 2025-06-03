@@ -36,8 +36,8 @@ class N8nClient {
             }
 
             const data = await response.json()
-            const parsedAnswer = JSON.parse(data.answerAI)
-            return parsedAnswer.answerAI
+            const parsedAnswer = data.answerAI
+            return parsedAnswer
         } catch (error) {
             console.error('Erro na comunicação com a Clara IA:', error)
             throw error
