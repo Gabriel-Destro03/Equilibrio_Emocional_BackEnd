@@ -111,6 +111,134 @@ class AuthController {
       })
     }
   }
+
+  /**
+   * Forgot password
+   * @param {object} ctx
+   * @param {Request} ctx.request
+   * @param {Response} ctx.response
+   */
+  async forgotPassword({ request, response }) {
+    try {
+      const { email } = request.all()
+
+      if (!email) {
+        return response.status(400).json({
+          success: false,
+          message: 'Email é obrigatório'
+        })
+      }
+
+      const result = await this.authService.forgotPassword(email)
+      
+      return response.json({
+        success: true,
+        message: result,//'Se o email existir em nossa base, você receberá as instruções para redefinir sua senha'
+      })
+    } catch (error) {
+      console.error('Forgot password error in controller:', error)
+      return response.status(500).json({
+        success: false,
+        message: error.message || 'Erro ao processar solicitação de redefinição de senha'
+      })
+    }
+  }
+
+  /**
+   * Validate reset password token
+   * @param {object} ctx
+   * @param {Request} ctx.request
+   * @param {Response} ctx.response
+   */
+  async validateResetToken({ request, response }) {
+    try {
+      const { token } = request.all()
+
+      if (!token) {
+        return response.status(400).json({
+          success: false,
+          message: 'Token é obrigatório'
+        })
+      }
+
+      const result = await this.authService.validateResetToken(token)
+      
+      return response.json({
+        success: true,
+        data: result
+      })
+    } catch (error) {
+      console.error('Validate reset token error in controller:', error)
+      return response.status(400).json({
+        success: false,
+        message: error.message || 'Token inválido ou expirado'
+      })
+    }
+  }
+
+  /**
+   * Validate reset password token and code
+   * @param {object} ctx
+   * @param {Request} ctx.request
+   * @param {Response} ctx.response
+   */
+  async validateResetCode({ request, response }) {
+    try {
+      const { token, code } = request.all()
+
+      if (!token || !code) {
+        return response.status(400).json({
+          success: false,
+          message: 'Token e código são obrigatórios'
+        })
+      }
+
+      const result = await this.authService.validateResetCode(token, code)
+      
+      return response.json({
+        success: true,
+        data: result
+      })
+    } catch (error) {
+      console.error('Validate reset code error in controller:', error)
+      return response.status(400).json({
+        success: false,
+        message: error.message || 'Token ou código inválidos'
+      })
+    }
+  }
+
+  /**
+   * Reset user password
+   * @param {object} ctx
+   * @param {Request} ctx.request
+   * @param {Response} ctx.response
+   */
+  async resetPassword({ request, response }) {
+    try {
+      const { token, uid, code, new_password } = request.all()
+
+      if (!token || !uid || !code || !new_password) {
+        return response.status(400).json({
+          success: false,
+          message: 'Token, uid, código e nova senha são obrigatórios'
+        })
+      }
+
+      const result = await this.authService.resetPassword(token, uid, code, new_password)
+      
+      return response.json({
+        success: true,
+        message: 'Senha atualizada com sucesso'
+      })
+    } catch (error) {
+      console.error('Reset password error in controller:', error)
+      return response.status(400).json({
+        success: false,
+        message: error.message || 'Erro ao atualizar senha'
+      })
+    }
+  }
 }
 
 module.exports = AuthController

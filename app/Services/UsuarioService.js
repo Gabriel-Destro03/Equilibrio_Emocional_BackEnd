@@ -131,7 +131,7 @@ class UsuarioService {
 
             try {
                 // Envia email de boas-vindas com a senha
-                await SendEmail.sendWelcomeEmail(email, nome_completo, password)
+                await SendEmail.sendWelcomeEmail(email, nome_completo, password, process.env.VITE_URL_FRONT)
             } catch (emailError) {
                 console.error('Erro ao enviar email de boas-vindas:', emailError)
                 // Não interrompe o fluxo se o email falhar

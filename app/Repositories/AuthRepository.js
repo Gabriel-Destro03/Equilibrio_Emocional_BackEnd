@@ -2,6 +2,7 @@
 
 const Config = use('Config')
 const TokenService = require('../Services/tokens/TokenService')
+const { createClient } = require('@supabase/supabase-js')
 
 class AuthRepository {
     constructor() {
@@ -161,6 +162,34 @@ class AuthRepository {
         } catch (error) {
             console.error('Logout error:', error)
             throw new Error(error.message || 'Erro ao realizar logout')
+        }
+    }
+
+    /**
+     * Reset user password in Supabase
+     * @param {string} uid User ID
+     * @param {string} newPassword New password
+     * @returns {Promise<void>}
+     * @throws {Error} If password update fails
+     */
+    async resetSenha(uid, newPassword) {
+        try {
+            const supabaseAdmin = createClient(
+                process.env.VITE_SUPABASE_URL,
+                process.env.VITE_SUPABASE_SERVICE_ROLE_KEY
+            )
+
+            const { error } = await supabaseAdmin.auth.admin.updateUserById(uid, {
+                password: newPassword
+            })
+
+            if (error) {
+                console.error('Error updating password:', error)
+                throw new Error(error.message)
+            }
+        } catch (error) {
+            console.error('Error in resetSenha:', error)
+            throw error
         }
     }
 }

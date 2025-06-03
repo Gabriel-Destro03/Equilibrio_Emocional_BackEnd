@@ -2,10 +2,14 @@
 
 const { AuthRepository } = require('../Repositories/AuthRepository')
 const TokenService = require('./tokens/TokenService')
+const UserRepository = require('../Repositories/UserRepository')
+const SendEmail = require('./Emails/SendEmail')
+const crypto = require('crypto')
 
 class AuthService {
     constructor() {
         this.repository = new AuthRepository()
+        this.userRepository = new UserRepository()
     }
 
     /**
@@ -159,6 +163,192 @@ class AuthService {
         } catch (error) {
             console.error('Logout error:', error)
             throw new Error(error.message || 'Erro ao realizar logout')
+        }
+    }
+
+    /**
+     * Process forgot password request
+     * @param {string} email User's email
+     * @returns {Promise<Object>} Result of the operation
+     */
+    async forgotPassword(email) {
+        try {
+            
+            const user = await this.userRepository.findByEmail(email)
+            if (!user) {
+                return { success: false, message: 'Usuário não encontrado' }
+            }
+
+            // Gerar código único para reset de senha
+            const resetCode = crypto.randomBytes(4).toString('hex').toUpperCase()
+            
+            const body = {
+                uid: user.uid,
+                type: "reset_password",
+                code: resetCode,
+                status: true,
+                expira_em: new Date(Date.now() + 15 * 60 * 1000), // 15 minutos
+            }
+
+            // Gerar token com os dados do body
+            body.token = TokenService.createToken(body).token
+            const resetLink = `${process.env.VITE_URL_FRONT}/codigo?token=${body.token}`
+
+            // Salvar na tabela acoes_usuarios
+            await this.userRepository.saveUserAction({
+                uid: user.uid,
+                type: 'reset_password',
+                code: resetCode,
+                status: true,
+                expira_em: new Date(Date.now() + 15 * 60 * 1000), // 15 minutos
+                token: body.token
+            })
+
+            // Enviar email
+            const sendemail = await SendEmail.sendResetPasswordEmail(
+                user.email,
+                user.nome_completo,
+                resetCode,
+                resetLink
+            )
+            return sendemail
+            return { success: true }
+        } catch (error) {
+            console.error('Error in forgotPassword service:', error)
+            throw new Error('Erro ao processar solicitação de redefinição de senha')
+        }
+    }
+
+    /**
+     * Validate reset password token
+     * @param {string} token Token to validate
+     * @returns {Promise<Object>} Token validation result
+     */
+    async validateResetToken(token) {
+        try {
+            // Buscar ação do usuário pelo token
+            const action = await this.userRepository.findActionByToken(token)
+            
+            if (!action) {
+                throw new Error('Token inválido')
+            }
+
+            // Verificar se o token está expirado
+            const now = new Date()
+            const expiraEm = new Date(action.expira_em)
+            
+            if (now > expiraEm) {
+                throw new Error('Token expirado')
+            }
+
+            // Verificar se o status está ativo
+            if (!action.status) {
+                throw new Error('Token inválido')
+            }
+
+            return action
+        } catch (error) {
+            console.error('Error validating reset token:', error)
+            throw error
+        }
+    }
+
+    /**
+     * Validate reset password token and code
+     * @param {string} token Token to validate
+     * @param {string} code Code to validate
+     * @returns {Promise<Object>} Validation result
+     */
+    async validateResetCode(token, code) {
+        try {
+            // Buscar ação do usuário pelo token e código
+            const action = await this.userRepository.findActionByTokenAndCode(token, code)
+            
+            if (!action) {
+                throw new Error('Token ou código inválidos')
+            }
+
+            // Verificar se o token está expirado
+            const now = new Date()
+            const expiraEm = new Date(action.expira_em)
+            
+            if (now > expiraEm) {
+                throw new Error('Token expirado')
+            }
+
+            // Verificar se o status está ativo
+            if (!action.status) {
+                throw new Error('Token inválido')
+            }
+
+            return {
+                valid: true,
+                action
+            }
+        } catch (error) {
+            console.error('Error validating reset code:', error)
+            throw error
+        }
+    }
+
+    /**
+     * Reset user password
+     * @param {string} token Token to validate
+     * @param {string} uid User ID
+     * @param {string} code Code to validate
+     * @param {string} newPassword New password
+     * @returns {Promise<Object>} Reset result
+     */
+    async resetPassword(token, uid, code, newPassword) {
+        try {
+            // Validar dados de entrada
+            if (!token || !uid || !code || !newPassword) {
+                throw new Error('Todos os campos são obrigatórios')
+            }
+
+            // Buscar ação do usuário pelo token, uid e código
+            const action = await this.userRepository.findActionByTokenUidAndCode(token, uid, code)
+            
+            if (!action) {
+                throw new Error('Token, uid ou código inválidos')
+            }
+
+            // Verificar se o token está expirado
+            const now = new Date()
+            const expiraEm = new Date(action.expira_em)
+            
+            if (now > expiraEm) {
+                throw new Error('Token expirado')
+            }
+
+            // Verificar se o status está ativo
+            if (!action.status) {
+                throw new Error('Token já utilizado')
+            }
+
+            // Atualizar a senha usando o AuthRepository
+            await this.repository.resetSenha(uid, newPassword)
+
+            // Atualizar o status da ação para usado
+            await this.userRepository.updateActionStatus(action.id, false)
+
+            return { 
+                success: true,
+                message: 'Senha atualizada com sucesso'
+            }
+        } catch (error) {
+            console.error('Error resetting password:', error)
+            
+            // Tratamento específico de erros
+            if (error.message.includes('password')) {
+                throw new Error('A senha não atende aos requisitos mínimos de segurança')
+            }
+            
+            if (error.message.includes('network')) {
+                throw new Error('Erro de conexão. Tente novamente mais tarde')
+            }
+
+            throw new Error(error.message || 'Erro ao atualizar senha')
         }
     }
 }
