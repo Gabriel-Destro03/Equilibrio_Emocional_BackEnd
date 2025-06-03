@@ -52,7 +52,7 @@ class SendEmail {
           margin-bottom: 20px;
         }
         .logo img {
-          height: 60px;
+          height: 120px;
         }
         h2 {
           color: #9b87f5;
@@ -91,7 +91,7 @@ class SendEmail {
     <body>
       <div class="container">
         <div class="logo">
-          <img src="https://yourdomain.com/logo.png" alt="Clara Logo" />
+          <img src="https://app.claraconecta.com.br/APC1%20(2).png" alt="Clara Logo" />
         </div>
         <h2>${title}</h2>
         ${html}

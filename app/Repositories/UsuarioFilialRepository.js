@@ -130,6 +130,7 @@ class UsuarioFilialRepository {
             if (updateData.is_representante === true) {
                 // Adiciona as permissões 3, 4 e 5
                 const permissoesParaAdicionar = [
+                    { id_user: idUsuario, id_permissao: 1, uid },
                     { id_user: idUsuario, id_permissao: 3, uid },
                     { id_user: idUsuario, id_permissao: 4, uid },
                     { id_user: idUsuario, id_permissao: 5, uid }
@@ -143,12 +144,12 @@ class UsuarioFilialRepository {
             } 
             // Se estiver removendo como representante
             else if (updateData.is_representante === false) {
-                // Remove as permissões 3, 4 e 5
+                // Remove as permissões 1, 3, 4 e 5
                 const { error: deleteError } = await this.supabase
                     .from('usuario_permissoes')
                     .delete()
                     .eq('id_user', idUsuario)
-                    .in('id_permissao', [3, 4, 5])
+                    .in('id_permissao', [1, 3, 4, 5])
 
                 if (deleteError) throw new Error(`Erro ao remover permissões: ${deleteError.message}`)
             }
