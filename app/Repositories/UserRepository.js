@@ -62,7 +62,7 @@ class UserRepository {
     try {
       const { data, error } = await this.supabase
         .from('acoes_usuarios')
-        .select('*')
+        .select('uid, type, token, status, expira_em')
         .eq('token', token)
         // .eq('type', 'reset_password')
         .single()

@@ -17,4 +17,4 @@ COPY . .
 EXPOSE 80
 
 # Comando para iniciar a aplicação
-CMD [ "yarn", "start" ]
+CMD [ "node", "server.js" ]

@@ -22,13 +22,46 @@ class UsuarioRepository {
                     status
                 ),
                 filial:filiais(
-                    nome_filial
+                    nome_filial,
+                    id
                 )  
             `)
             .order('created_at', { ascending: false })
+        
+            const filiaisIds = [...new Set(data.map(item => item.filial.id))];
+            
+            const { data: departamentosData, error: departamentosError } = await this.supabase
+            .from('usuario_departamento')
+            .select(`
+                usuario:usuarios!inner (
+                    id,
+                    uid
+                ),
+                departamento:departamentos (
+                    id,
+                    id_filial,
+                    nome_departamento
+                )
+            `)
+            .in('departamentos.id_filial', filiaisIds)
 
         if (error) throw new Error(error.message)
-            const usuariosFormatados = data.map(item => ({
+        if (departamentosError) throw new Error(departamentosError.message)
+
+        // Create a map of user departments for quick lookup
+        const userDepartments = new Map()
+        departamentosData.forEach(item => {
+            if (item.departamento) {
+                userDepartments.set(item.usuario.uid || item.usuario.id, {
+                    nome: item.departamento.nome_departamento,
+                    id: item.departamento.id
+                })
+            }
+        })
+
+        const usuariosFormatados = data.map(item => {
+            const departamentoInfo = userDepartments.get(item.usuario.uid || item.usuario.id)
+            return {
                 id: item.usuario.id,
                 uid: item.usuario.uid,
                 nome_completo: item.usuario.nome_completo,
@@ -37,12 +70,16 @@ class UsuarioRepository {
                 telefone: item.usuario.telefone,
                 status: item.usuario.status,
                 created_at: item.usuario.created_at,
-                nome_filial: item.filial.nome_filial
-            }))
+                nome_filial: item.filial.nome_filial,
+                id_filial: item.filial.id,
+                departamento: departamentoInfo?.nome || null,
+                id_departamento: departamentoInfo?.id || null
+            }
+        })
     
-            // Remove duplicatas mantendo o formato solicitado
-            const usuariosUnicos = [...new Map(usuariosFormatados.map(item => [item.uid || item.id, item])).values()]
-            return usuariosUnicos
+        // Remove duplicatas mantendo o formato solicitado
+        const usuariosUnicos = [...new Map(usuariosFormatados.map(item => [item.uid || item.id, item])).values()]
+        return usuariosUnicos
     }
 
     async getUsuarioById(id) {
@@ -129,126 +166,162 @@ class UsuarioRepository {
     }
 
     async updateUsuario(id, usuarioData) {
-        const { data, error } = await this.supabase
+        const supabase = this.supabase;
+    
+        // Atualiza o usuário
+        const { data, error } = await supabase
             .from('usuarios')
-            .update(usuarioData)
+            .update({
+                nome_completo: usuarioData.nome_completo,
+                email: usuarioData.email,
+                telefone: usuarioData.telefone,
+                cargo: usuarioData.cargo,
+            })
             .eq('id', id)
             .select()
-            .single()
-            .order('id', { ascending: false })
-
-        if (error) throw new Error(error.message)
-        return data
+            .single();
+    
+        if (error) throw new Error(`Erro ao atualizar usuário: ${error.message}`);
+    
+        // Executa atualizações em paralelo (filial e departamento)
+        const [filialResult, departamentoResult] = await Promise.all([
+            supabase
+                .from('usuario_filial')
+                .update({ id_filial: usuarioData.id_filial })
+                .eq('id_usuario', id),
+    
+            supabase
+                .from('usuario_departamento')
+                .update({ id_departamento: usuarioData.id_departamento })
+                .eq('id_usuario', id)
+        ]);
+    
+        // Verifica erros nas atualizações paralelas
+        if (filialResult.error) {
+            throw new Error(`Erro ao atualizar filial: ${filialResult.error.message}`);
+        }
+    
+        if (departamentoResult.error) {
+            throw new Error(`Erro ao atualizar departamento: ${departamentoResult.error.message}`);
+        }
+    
+        return data;
     }
-
-    async inactivateUsuario(id) {
-        const { data: usuario, error: fetchError } = await this.supabase
-            .from('usuarios')
-            .select('status')
-            .eq('id', id)
-            .single()
-            .order('id', { ascending: false })
-
-        if (fetchError) throw new Error(fetchError.message)
-        if (!usuario) throw new Error('Usuário não encontrado')
-
-        const { data, error } = await this.supabase
-            .from('usuarios')
-            .update({ status: !usuario.status })
-            .eq('id', id)
-            .select()
-            .single()
-            .order('id', { ascending: false })
-
-        if (error) throw new Error(error.message)
-        return data
-    }
+    
 
     async getUsuariosByFilial(uid) {
-        // Verifica as permissões do usuário
-        const { data: permissoesData, error: permissoesError } = await this.supabase
+        const supabase = this.supabase;
+    
+        // 1. Verifica as permissões do usuário
+        const { data: permissoesData, error: permissoesError } = await supabase
             .from('usuario_permissoes')
             .select(`
-                usuario:usuarios!inner (
-                    uid
-                ),
-                permissao:permissoes (
-                    tag
-                )
+                usuario:usuarios!inner(uid, id),
+                permissao:permissoes(tag)
             `)
-            .eq('usuario.uid', uid)
-
-        if (permissoesError) throw new Error(permissoesError.message)
-
-        const permissoes = permissoesData.map(item => item.permissao.tag)
-        const temPermissaoSuper = permissoesData.some(item => item.permissao.tag === 'internal_super')
-
-        if(temPermissaoSuper) return this.getAllUsuarios();
-
-        const temPermissaoAcesso = permissoes.some(tag => ['branchCreate', 'rep_filial'].includes(tag))
-
+            .eq('usuario.uid', uid);
+    
+        if (permissoesError) throw new Error(`Erro ao buscar permissões: ${permissoesError.message}`);
+    
+        const permissoes = permissoesData.map(p => p.permissao.tag);
+        const temPermissaoSuper = permissoes.includes('internal_super');
+    
+        if (temPermissaoSuper) return this.getAllUsuarios();
+    
+        const temPermissaoAcesso = permissoes.some(tag =>
+            ['branchCreate', 'rep_filial'].includes(tag)
+        );
+    
         if (!temPermissaoAcesso) {
-            throw new Error('Usuário não tem permissão para acessar esta funcionalidade')
+            throw new Error('Usuário não tem permissão para acessar esta funcionalidade');
         }
+        
+        // Extrai ID do usuário (assume que todas as linhas retornadas têm o mesmo `usuario.id`)
+        const idUsuario = permissoesData[0].usuario.id;
 
-        // Busca as filiais do usuário
-        const { data: filiaisData, error: filiaisError } = await this.supabase
+        // 2. Busca as filiais do usuário
+        const { data: filiaisData, error: filiaisError } = await supabase
             .from('usuario_filial')
             .select(`
-                usuario:usuarios!inner (
-                    id,
-                    uid
-                ),
-                filial:filiais (
-                    id
-                )
+                filial:filiais(id)
             `)
-            .eq('usuario.uid', uid)
+            .eq('id_usuario', idUsuario); // Melhor usar `id_usuario` se `usuario.uid` for igual a `usuarios.uid`
+    
+        if (filiaisError) throw new Error(`Erro ao buscar filiais: ${filiaisError.message}`);
+    
+        const filiaisIds = [...new Set(filiaisData.map(f => f.filial?.id).filter(Boolean))];
+        if (filiaisIds.length === 0) return [];
+    
+        // 3. Busca usuários e departamentos das filiais em paralelo
+        const [usuariosResult, departamentosResult] = await Promise.all([
+            supabase
+                .from('usuario_filial')
+                .select(`
+                    usuario:usuarios(
+                        id, uid, nome_completo, cargo,
+                        email, telefone, created_at, status
+                    ),
+                    filial:filiais(id, nome_filial)
+                `)
+                .in('id_filial', filiaisIds),
+                // .order('usuario.created_at', { ascending: false }),
+    
+            supabase
+                .from('usuario_departamento')
+                .select(`
+                    usuario:usuarios!inner(id, uid),
+                    departamento:departamentos(id, id_filial, nome_departamento)
+                `)
+                .in('departamentos.id_filial', filiaisIds)
+        ]);
+    
+        if (usuariosResult.error) throw new Error(`Erro ao buscar usuários: ${usuariosResult.error.message}`);
+        if (departamentosResult.error) throw new Error(`Erro ao buscar departamentos: ${departamentosResult.error.message}`);
+    
+        const usuariosData = usuariosResult.data;
+        const departamentosData = departamentosResult.data;
+    
+        // 4. Mapeia departamentos por usuário
+        const userDepartments = new Map();
+        for (const { usuario, departamento } of departamentosData) {
+            if (usuario && departamento) {
+                userDepartments.set(usuario.uid || usuario.id, {
+                    nome: departamento.nome_departamento,
+                    id: departamento.id
+                });
+            }
+        }
+    
+        // 5. Formata usuários e remove duplicatas
+        const usuariosFormatados = usuariosData.map(({ usuario, filial }) => {
+            const dep = userDepartments.get(usuario.uid || usuario.id);
+            return {
+                id: usuario.id,
+                uid: usuario.uid,
+                nome_completo: usuario.nome_completo,
+                cargo: usuario.cargo,
+                email: usuario.email,
+                telefone: usuario.telefone,
+                status: usuario.status,
+                created_at: usuario.created_at,
+                nome_filial: filial?.nome_filial || null,
+                id_filial: filial?.id || null,
+                departamento: dep?.nome || null,
+                id_departamento: dep?.id || null
+            };
+        });
+    
+        // Remove duplicatas
+        const usuariosUnicos = [
+            ...new Map(usuariosFormatados.map(u => [u.uid || u.id, u])).values()
+        ];
 
-        if (filiaisError) throw new Error(filiaisError.message)
+        // Ordena do mais recente para o mais antigo
+        usuariosUnicos.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
-        const filiaisIds = filiaisData.map(item => item.filial.id)
-
-        // Busca os usuários das filiais
-        const { data: usuariosData, error: usuariosError } = await this.supabase
-            .from('usuario_filial')
-            .select(`
-                usuario:usuarios(
-                    id,
-                    uid,
-                    nome_completo,
-                    cargo,
-                    email,
-                    telefone,
-                    created_at,
-                    status
-                ),
-                filial:filiais(
-                    nome_filial
-                )    
-            `)
-            .in('id_filial', filiaisIds)
-            .order('usuario(created_at)', { ascending: false })
-
-        if (usuariosError) throw new Error(usuariosError.message)
-
-        // Formata o resultado conforme solicitado
-        const usuariosFormatados = usuariosData.map(item => ({
-            id: item.usuario.id,
-            uid: item.usuario.uid,
-            nome_completo: item.usuario.nome_completo,
-            cargo: item.usuario.cargo,
-            email: item.usuario.email,
-            telefone: item.usuario.telefone,
-            status: item.usuario.status,
-            created_at: item.usuario.created_at,
-            nome_filial: item.filial.nome_filial
-        }))
-
-        // Remove duplicatas mantendo o formato solicitado
-        const usuariosUnicos = [...new Map(usuariosFormatados.map(item => [item.uid || item.id, item])).values()]
-        return usuariosUnicos
+        return usuariosUnicos;
     }
+    
 }
 
 module.exports = UsuarioRepository 

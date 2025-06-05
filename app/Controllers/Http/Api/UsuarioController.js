@@ -75,7 +75,7 @@ class UsuarioController {
      */
     async update({ params, request, response }) {
         try {
-            const usuarioData = request.only(['nome_completo', 'email', 'telefone', 'cargo'])
+            const usuarioData = request.only(['nome_completo', 'email', 'telefone', 'cargo', 'id_filial', 'id_departamento'])
             const usuario = await this.service.updateUsuario(params.id, usuarioData)
             return response.status(200).json(usuario)
         } catch (error) {
