@@ -239,6 +239,38 @@ class AuthController {
       })
     }
   }
+
+  /**
+   * Define user password
+   * @param {object} ctx
+   * @param {Request} ctx.request
+   * @param {Response} ctx.response
+   */
+  async definePassword({ request, response }) {
+    try {
+      const { token, uid, code, password, new_password } = request.all()
+
+      if (!token || !uid || !code || !password || !new_password) {
+        return response.status(400).json({
+          success: false,
+          message: 'Token, uid, código, senha atual e nova senha são obrigatórios'
+        })
+      }
+
+      const result = await this.authService.definePassword(token, uid, code, password, new_password)
+      
+      return response.json({
+        success: true,
+        message: 'Senha definida com sucesso'
+      })
+    } catch (error) {
+      console.error('Define password error in controller:', error)
+      return response.status(400).json({
+        success: false,
+        message: error.message || 'Erro ao definir senha'
+      })
+    }
+  }
 }
 
 module.exports = AuthController

@@ -148,7 +148,7 @@ Route.group('auth', () => {
 
   /**
    * @swagger
-   * /auth/validate-reset-token:
+   * /auth/validate-token:
    *   post:
    *     tags:
    *       - Auth
@@ -172,11 +172,11 @@ Route.group('auth', () => {
    *       400:
    *         description: Token inválido ou expirado
    */
-  Route.post('/validate-reset-token', 'Api/AuthController.validateResetToken')
+  Route.post('/validate-token', 'Api/AuthController.validateResetToken')
 
   /**
    * @swagger
-   * /auth/validate-reset-code:
+   * /auth/validate-code:
    *   post:
    *     tags:
    *       - Auth
@@ -204,7 +204,7 @@ Route.group('auth', () => {
    *       400:
    *         description: Token ou código inválidos
    */
-  Route.post('/validate-reset-code', 'Api/AuthController.validateResetCode')
+  Route.post('/validate-code', 'Api/AuthController.validateResetCode')
 
   /**
    * @swagger
@@ -245,5 +245,49 @@ Route.group('auth', () => {
    *         description: Dados inválidos ou erro na atualização
    */
   Route.post('/reset-password', 'Api/AuthController.resetPassword')
+
+  /**
+   * @swagger
+   * /auth/define-password:
+   *   post:
+   *     tags:
+   *       - Auth
+   *     summary: Define a senha do usuário
+   *     description: Define a senha do usuário usando token, uid, código e senha
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             required:
+   *               - token
+   *               - uid
+   *               - code
+   *               - password
+   *               - new_password
+   *             properties:
+   *               token:
+   *                 type: string
+   *                 description: Token de definição de senha
+   *               uid:
+   *                 type: string
+   *                 description: ID do usuário
+   *               code:
+   *                 type: string
+   *                 description: Código de definição de senha
+   *               password:
+   *                 type: string
+   *                 description: Senha atual do usuário
+   *               new_password:
+   *                 type: string
+   *                 description: Nova senha do usuário
+   *     responses:
+   *       200:
+   *         description: Senha definida com sucesso
+   *       400:
+   *         description: Dados inválidos ou erro na definição
+   */
+  Route.post('/define-password', 'Api/AuthController.definePassword')
 
 }).prefix('/auth')

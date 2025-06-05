@@ -33,65 +33,72 @@ class SendEmail {
     <head>
       <meta charset="UTF-8" />
       <style>
-        body {
-          font-family: 'Segoe UI', sans-serif;
-          background-color: #f6f4ff;
-          padding: 40px;
-        }
-        .container {
-          background: #fff;
-          max-width: 600px;
-          margin: auto;
-          padding: 30px;
-          border-radius: 12px;
-          box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-          border: 1px solid #e0d9fa;
-        }
-        .logo {
-          text-align: center;
-          margin-bottom: 20px;
-        }
-        .logo img {
-          height: 120px;
-        }
-        h2 {
-          color: #9b87f5;
-          text-align: center;
-        }
-        .code {
-          font-size: 24px;
-          font-weight: bold;
-          background: #f6f4ff;
-          color: #9b87f5;
-          padding: 12px;
-          border-radius: 8px;
-          text-align: center;
-          margin: 20px 0;
-          letter-spacing: 3px;
-        }
-        .button {
-          display: block;
-          background: #7e69ab;
-          color: white;
-          text-align: center;
-          padding: 12px;
-          border-radius: 8px;
-          text-decoration: none;
-          font-weight: bold;
-          margin-top: 20px;
-        }
-        .footer {
-          text-align: center;
-          font-size: 12px;
-          color: #999;
-          margin-top: 30px;
-        }
-      </style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #f6f4ff;
+      padding: 40px;
+    }
+
+    .container {
+      background: #fff;
+      max-width: 600px;
+      margin: auto;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+      border: 1px solid #e0d9fa;
+    }
+
+    .logo {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .logo img {
+      height: 120px;
+    }
+
+    h2 {
+      color: #9b87f5;
+      text-align: center;
+    }
+
+    .code {
+      font-size: 24px;
+      font-weight: bold;
+      background: #f6f4ff;
+      color: #9b87f5;
+      padding: 12px;
+      border-radius: 8px;
+      text-align: center;
+      margin: 20px 0;
+      letter-spacing: 3px;
+    }
+
+    .button {
+      display: block;
+      background: #7e69ab;
+      color: white;
+      text-align: center;
+      padding: 12px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: bold;
+      margin-top: 20px;
+    }
+
+    .footer {
+      text-align: center;
+      font-size: 12px;
+      color: #999;
+      margin-top: 30px;
+    }
+  </style>
     </head>
     <body>
       <div class="container">
         <div class="logo">
-          <img src="https://app.claraconecta.com.br/logo.png" alt="Clara Logo" />
+          <img src="https://app.claraconecta.com.br/logo.png" alt="Logotipo da Plataforma Clara Conecta" />
         </div>
         <h2>${title}</h2>
         ${html}
@@ -121,26 +128,39 @@ class SendEmail {
    * @param {string} password User's password
    * @returns {Promise} Resend API response
    */
-  async sendWelcomeEmail(email, name, password, link) {
+  async sendWelcomeEmail(email, link, code) {
     const html = `
-      <p style="color: #8779c5;">Sua plataforma de Check-in Emocional</p>
+      <p style="color: #8779c5;">Estamos felizes em ter você com a gente.</p>
+
+      <p style="color: #8779c5;">Use o código abaixo para validar seu acesso:</p>
+      <div class="code">${code}</div>
+
       <p style="text-align: left; color: #8779c5;">
-        Aqui estão suas credenciais de acesso:
+        Para ativar sua conta, defina sua senha clicando no botão abaixo:
       </p>
-      <div>
-        <p style="background: #f6f4ff; padding: 10px; border-radius: 8px; color: #333;text-align: left">
-        <strong>Email:</strong> ${email}<br>
-        <strong>Senha:</strong> ${password}
+
+      <a href="${link}" 
+        class="button" 
+        style="text-align: center; display: inline-block; text-decoration: none;">
+        Definir minha senha
+      </a>
+
+      <p style="color: #888; font-size: 12px; margin-top: 20px;">
+        Este link expira em 24 horas. Se você não solicitou este acesso, ignore este e-mail.
       </p>
-      </div>
-      <p style="color: #888; font-size: 12px;">Recomendamos que altere sua senha após o primeiro acesso.</p>
-      <a href="${link}" style="display: inline-block; margin-top: 20px; background: #7e68ab; color: white; padding: 10px 20px; border-radius: 5px; text-decoration: none;">Acessar a Plataforma</a>
+
+      <p style="margin-top: 30px; color: #8779c5;">Já tem uma conta?</p>
+      <a href="https://app.claraconecta.com.br" 
+        class="button" 
+        style="background: #9b87f5;">
+        Acessar a Plataforma Clara
+      </a>
     `
     return this.sendEmail({
       to: email,
       subject: 'Bem-vindo ao Clara Equilibrio Emocional',
       html,
-      title: "Bem-vindo(a) ao Clara Equilibrio Emocional!"
+      title: "Bem-vindo(a) ao Clara Equilíbrio Emocional!"
     })
   }
 

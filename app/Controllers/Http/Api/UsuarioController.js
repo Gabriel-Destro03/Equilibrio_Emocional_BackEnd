@@ -32,6 +32,18 @@ class UsuarioController {
     }
 
     /**
+     * Busca um usuário específico
+     */
+    async showUid({ params, response }) {
+        try {
+            const usuario = await this.service.getUsuarioByUid(params.uid)
+            return response.status(200).json(usuario)
+        } catch (error) {
+            return response.status(400).json({ error: error.message })
+        }
+    }
+
+    /**
      * Busca um usuário por email
      */
     async getByEmail({ params, response }) {

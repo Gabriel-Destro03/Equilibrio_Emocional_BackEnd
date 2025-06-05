@@ -2,8 +2,11 @@
 
 const UsuarioRepository = require('../Repositories/UsuarioRepository')
 const { AuthService } = require('./AuthService')
+const UserRepository = require('../Repositories/UserRepository')
 const PasswordGenerator = require('../Utils/PasswordGenerator')
 const SendEmail = require('../Services/Emails/SendEmail')
+const TokenService = require('./tokens/TokenService')
+const crypto = require('crypto')
 
 /**
  * Serviço responsável pela lógica de negócios relacionada aos usuários
@@ -12,6 +15,7 @@ class UsuarioService {
     constructor() {
         this.repository = new UsuarioRepository()
         this.authService = new AuthService()
+        this.usuarioRepository = new UserRepository()
     }
 
     /**
@@ -40,6 +44,22 @@ class UsuarioService {
 
         try {
             const usuario = await this.repository.getUsuarioById(id)
+            if (!usuario) {
+                throw new Error('Usuário não encontrado')
+            }
+            return usuario
+        } catch (error) {
+            throw new Error(`Erro ao buscar usuário: ${error.message}`)
+        }
+    }
+
+    async getUsuarioByUid(id) {
+        if (!id) {
+            throw new Error('Uid do usuário é obrigatório')
+        }
+
+        try {
+            const usuario = await this.repository.getUsuarioByUid(id)
             if (!usuario) {
                 throw new Error('Usuário não encontrado')
             }
@@ -111,12 +131,12 @@ class UsuarioService {
             // Gera uma senha aleatória
             const password = PasswordGenerator.generatePassword()
             
-            // Cria o usuário no sistema de autenticação
-            const authUser = await this.authService.signUp(email, password)
+            // // Cria o usuário no sistema de autenticação
+            // const authUser = await this.authService.signUp(email, password)
 
-            if (!authUser || !authUser.user || !authUser.user.id) {
-                throw new Error('Erro ao criar usuário no sistema de autenticação')
-            }
+            // if (!authUser || !authUser.user || !authUser.user.id) {
+            //     throw new Error('Erro ao criar usuário no sistema de autenticação')
+            // }
 
             // Cria o usuário no banco de dados
             const usuario = await this.repository.createUsuario({
@@ -124,14 +144,40 @@ class UsuarioService {
                 email,
                 telefone,
                 cargo,
-                uid: authUser.user.id,
+                uid: password,
                 id_filial,
                 id_departamento
             })
 
+            // Gerar código único para reset de senha
+            const code = crypto.randomBytes(4).toString('hex').toUpperCase()
+            
+            const body = {
+                uid: usuario.uid,
+                type: "email_activation",
+                code: code,
+                status: true,
+                expira_em: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 horas
+            }
+
+            // Gerar token com os dados do body
+            body.token = TokenService.createToken(body).token
+            const resetLink = `${process.env.VITE_URL_FRONT}/codigo?token=${body.token}`
+
+            // Salvar na tabela acoes_usuarios
+            await this.usuarioRepository.saveUserAction({
+                uid: password,
+                type: 'email_activation',
+                code: code,
+                status: true,
+                expira_em: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 horas
+                token: body.token
+            })
+
+
             try {
                 // Envia email de boas-vindas com a senha
-                await SendEmail.sendWelcomeEmail(email, nome_completo, password, process.env.VITE_URL_FRONT)
+                await SendEmail.sendWelcomeEmail(email, resetLink, code)
             } catch (emailError) {
                 console.error('Erro ao enviar email de boas-vindas:', emailError)
                 // Não interrompe o fluxo se o email falhar

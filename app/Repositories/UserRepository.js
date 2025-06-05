@@ -64,7 +64,7 @@ class UserRepository {
         .from('acoes_usuarios')
         .select('*')
         .eq('token', token)
-        .eq('type', 'reset_password')
+        // .eq('type', 'reset_password')
         .single()
 
       if (error) {
@@ -92,7 +92,7 @@ class UserRepository {
         .select('*')
         .eq('token', token)
         .eq('code', code)
-        .eq('type', 'reset_password')
+        // .eq('type', 'reset_password')
         .single()
 
       if (error) {
@@ -122,7 +122,7 @@ class UserRepository {
         .eq('token', token)
         .eq('uid', uid)
         .eq('code', code)
-        .eq('type', 'reset_password')
+        // .eq('type', 'reset_password')
         .single()
 
       if (error) {

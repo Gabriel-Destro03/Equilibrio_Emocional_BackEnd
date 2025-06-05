@@ -57,6 +57,18 @@ class UsuarioRepository {
         return data
     }
 
+    async getUsuarioByUid(uid) {
+        const { data, error } = await this.supabase
+            .from('usuarios')
+            .select('*')
+            .eq('uid', uid)
+            .order('id', { ascending: false })
+            .single()
+
+        if (error) throw new Error(error.message)
+        return data
+    }
+
     async getUsuarioByEmail(email) {
         const { data, error } = await this.supabase
             .from('usuarios')

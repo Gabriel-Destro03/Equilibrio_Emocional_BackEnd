@@ -80,6 +80,33 @@ Route.group(() => {
    *         description: Usuário não encontrado
    */
   Route.get('/:id', 'Api/UsuarioController.show')
+  
+  /**
+   * @swagger
+   * /api/usuarios/uid/{uid}:
+   *   get:
+   *     tags:
+   *       - Usuários
+   *     summary: Busca um usuário específico
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - name: uid
+   *         in: path
+   *         required: true
+   *         type: integer
+   *         description: uid do usuário
+   *     responses:
+   *       200:
+   *         description: Usuário encontrado com sucesso
+   *       400:
+   *         description: Erro ao buscar usuário
+   *       401:
+   *         description: Não autorizado
+   *       404:
+   *         description: Usuário não encontrado
+   */
+  Route.get('/uid/:uid', 'Api/UsuarioController.showUid')
 
   /**
    * @swagger

@@ -1,6 +1,7 @@
 'use strict'
 
 const { AuthRepository } = require('../Repositories/AuthRepository')
+const UsuarioRepository = require('../Repositories/UsuarioRepository')
 const TokenService = require('./tokens/TokenService')
 const UserRepository = require('../Repositories/UserRepository')
 const SendEmail = require('./Emails/SendEmail')
@@ -10,6 +11,7 @@ class AuthService {
     constructor() {
         this.repository = new AuthRepository()
         this.userRepository = new UserRepository()
+        this.usuarioRepository = new UsuarioRepository()
     }
 
     /**
@@ -349,6 +351,88 @@ class AuthService {
             }
 
             throw new Error(error.message || 'Erro ao atualizar senha')
+        }
+    }
+
+    /**
+     * Define user password
+     * @param {string} token Token to validate
+     * @param {string} uid User ID
+     * @param {string} code Code to validate
+     * @param {string} currentPassword Current password
+     * @param {string} newPassword New password
+     * @returns {Promise<Object>} Define password result
+     */
+    async definePassword(token, uid, code, currentPassword, newPassword) {
+        try {
+            // Validar dados de entrada
+            if (!token || !uid || !code || !currentPassword || !newPassword) {
+                throw new Error('Todos os campos são obrigatórios')
+            }
+
+            // Buscar ação do usuário pelo token, uid e código
+            const action = await this.userRepository.findActionByTokenUidAndCode(token, uid, code)
+            
+            if (!action) {
+                throw new Error('Token, uid ou código inválidos')
+            }
+
+            // Verificar se o token está expirado
+            const now = new Date()
+            const expiraEm = new Date(action.expira_em)
+            
+            if (now > expiraEm) {
+                throw new Error('Token expirado')
+            }
+
+            // Verificar se o status está ativo
+            if (!action.status) {
+                throw new Error('Token já utilizado')
+            }
+
+            // Verificar se a senha atual está correta
+            const user = await this.usuarioRepository.getUsuarioByUid(uid)
+            if (!user) {
+                throw new Error('Usuário não encontrado')
+            }
+
+            if(currentPassword !== newPassword){
+                throw new Error('As senhas não coincidem')
+            }
+
+            const userAuth = await this.signUp(user.email, currentPassword)
+
+            this.usuarioRepository.updateUsuario(user.id, { uid: userAuth.user.id })
+
+            // // Verificar senha atual
+            // const isPasswordValid = await this.repository.verifyPassword(uid, currentPassword)
+            // if (!isPasswordValid) {
+            //     throw new Error('Senha atual incorreta')
+            // }
+
+            // // Atualizar a senha usando o AuthRepository
+            // await this.repository.resetSenha(uid, newPassword)
+
+            // // Atualizar o status da ação para usado
+            await this.userRepository.updateActionStatus(action.id, false)
+
+            return { 
+                success: true,
+                message: 'Senha definida com sucesso'
+            }
+        } catch (error) {
+            console.error('Error defining password:', error)
+            
+            // Tratamento específico de erros
+            if (error.message.includes('password')) {
+                throw new Error('A senha não atende aos requisitos mínimos de segurança')
+            }
+            
+            if (error.message.includes('network')) {
+                throw new Error('Erro de conexão. Tente novamente mais tarde')
+            }
+
+            throw new Error(error.message || 'Erro ao definir senha')
         }
     }
 }

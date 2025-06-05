@@ -192,6 +192,38 @@ class AuthRepository {
             throw error
         }
     }
+
+    /**
+     * Verify user password
+     * @param {string} uid User ID
+     * @param {string} password Password to verify
+     * @returns {Promise<boolean>} True if password is valid
+     */
+    async verifyPassword(uid, password) {
+        try {
+            const supabaseAdmin = createClient(
+                process.env.VITE_SUPABASE_URL,
+                process.env.VITE_SUPABASE_SERVICE_ROLE_KEY
+            )
+
+            // Get user email
+            const { data: userData, error: userError } = await supabaseAdmin.auth.admin.getUserById(uid)
+            if (userError || !userData) {
+                throw new Error('Erro ao buscar usuário')
+            }
+
+            // Try to sign in with the provided password
+            const { error } = await this.supabase.auth.signInWithPassword({
+                email: userData.email,
+                password: password
+            })
+
+            return !error
+        } catch (error) {
+            console.error('Error verifying password:', error)
+            return false
+        }
+    }
 }
 
 module.exports = { AuthRepository }
