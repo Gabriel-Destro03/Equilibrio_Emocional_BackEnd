@@ -392,6 +392,7 @@ class AuthService {
 
             // Verificar se a senha atual está correta
             const user = await this.usuarioRepository.getUsuarioByUid(uid)
+            
             if (!user) {
                 throw new Error('Usuário não encontrado')
             }
@@ -400,20 +401,17 @@ class AuthService {
                 throw new Error('As senhas não coincidem')
             }
 
+            // Criar novo usuário no sistema de autenticação
             const userAuth = await this.signUp(user.email, currentPassword)
+            
+            if (!userAuth || !userAuth.user || !userAuth.user.id) {
+                throw new Error('Erro ao criar usuário no sistema de autenticação')
+            }
 
-            this.usuarioRepository.updateUsuario(user.id, { uid: userAuth.user.id })
+            // Atualizar o UID do usuário na tabela de usuários
+            await this.usuarioRepository.updateUsuarioUId(user.id, userAuth.user.id)
 
-            // // Verificar senha atual
-            // const isPasswordValid = await this.repository.verifyPassword(uid, currentPassword)
-            // if (!isPasswordValid) {
-            //     throw new Error('Senha atual incorreta')
-            // }
-
-            // // Atualizar a senha usando o AuthRepository
-            // await this.repository.resetSenha(uid, newPassword)
-
-            // // Atualizar o status da ação para usado
+            // Atualizar o status da ação para usado
             await this.userRepository.updateActionStatus(action.id, false)
 
             return { 
@@ -422,6 +420,7 @@ class AuthService {
             }
         } catch (error) {
             console.error('Error defining password:', error)
+            console.error('Error stack:', error.stack)
             
             // Tratamento específico de erros
             if (error.message.includes('password')) {

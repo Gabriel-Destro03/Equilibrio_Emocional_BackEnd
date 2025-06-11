@@ -207,6 +207,24 @@ class UsuarioRepository {
     
         return data;
     }
+
+    async updateUsuarioUId(id, uid) {
+        const supabase = this.supabase;
+    
+        // Atualiza o usuário
+        const { data, error } = await supabase
+            .from('usuarios')
+            .update({
+                uid: uid
+            })
+            .eq('id', id)
+            .select()
+            .single();
+    
+        if (error) throw new Error(`Erro ao atualizar usuário: ${error.message}`);
+    
+        return data;
+    }
     
 
     async getUsuariosByFilial(uid) {
