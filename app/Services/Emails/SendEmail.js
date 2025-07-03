@@ -78,7 +78,7 @@ class SendEmail {
     .button {
       display: block;
       background: #7e69ab;
-      color: white;
+      color: white !important;
       text-align: center;
       padding: 12px;
       border-radius: 8px;
