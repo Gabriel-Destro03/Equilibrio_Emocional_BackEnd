@@ -128,7 +128,7 @@ class UsuarioRepository {
                     email: usuarioData.email,
                     telefone: usuarioData.telefone,
                     cargo: usuarioData.cargo,
-                    status: true,
+                    status: false,
                     uid: usuarioData.uid
                 }])
                 .select('*')
@@ -215,7 +215,8 @@ class UsuarioRepository {
         const { data, error } = await supabase
             .from('usuarios')
             .update({
-                uid: uid
+                uid: uid,
+                status: true
             })
             .eq('id', id)
             .select()
