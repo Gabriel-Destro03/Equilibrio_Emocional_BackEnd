@@ -106,6 +106,46 @@ class UsuarioRepository {
         return data
     }
 
+    async getUsuariosFiliaisDepartamento(uid) {
+        const { data, error } = await this.supabase
+            .from('usuarios')
+            .select(`
+                id,
+                usuario_filial (
+                    id_filial,
+                    is_representante
+                ),
+                usuario_departamento (
+                    id_departamento,
+                    is_representante
+                )
+            `)
+            .eq('uid', uid)
+            .maybeSingle(); // garante que só 1 usuário venha
+        if (error) {
+            throw new Error('Erro ao buscar usuário: ' + error.message);
+        }
+
+        if (!data) return [];
+
+        const filiaisRepresentantes = data.usuario_filial?.filter(f => f.is_representante) || [];
+        if (filiaisRepresentantes.length > 0) {
+            return {
+                id_filial: filiaisRepresentantes.map(f => f.id_filial)
+            };
+        }
+
+        const departamentosRepresentantes = data.usuario_departamento?.filter(d => d.is_representante) || [];
+        if (departamentosRepresentantes.length > 0) {
+            return {
+                id_departamento: departamentosRepresentantes.map(d => d.id_departamento)
+            }
+        }
+
+        return []; // nenhum representante encontrado
+    }
+      
+
     async getUsuarioByEmail(email) {
         const { data, error } = await this.supabase
             .from('usuarios')
