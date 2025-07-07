@@ -88,14 +88,21 @@ class DashboardService {
   async mediaDepartamentos(data, type = 'Mensal') {
     const agora = new Date();
     const { index: semanaAtualIndex, semanasAteAgora } = this.getSemanaInfo(agora.getDate());
-
+  
     const mesAtualFormatado = this.formatarMesAno(agora);
     const mesAnteriorDate = new Date(agora.getFullYear(), agora.getMonth() - 1, 1);
     const mesAnteriorFormatado = this.formatarMesAno(mesAnteriorDate);
-
-    const departamentos = [...new Set(data.map(d => d.nome_departamento || 'Indefinido'))];
-    const resultado = {};
-
+  
+    // Obter departamentos únicos com nome + id
+    const departamentosUnicos = [
+      ...new Map(
+        data.map(d => [d.departamento_id, {
+          id: d.departamento_id,
+          nome: d.nome_departamento || 'Indefinido'
+        }])
+      ).values()
+    ];
+  
     const filtrarDados = (dados, filtroMeses, semanas = null, semanaIndex = null) => {
       return dados.filter(d =>
         filtroMeses.includes(d.mes_ano_analise) &&
@@ -103,60 +110,61 @@ class DashboardService {
         (semanaIndex !== null ? d.semana_nome == semanaIndex : true)
       );
     };
-
-    // Trimestres fixos
+  
     const trimestres = [
       ['01', '02', '03'],
       ['04', '05', '06'],
       ['07', '08', '09'],
       ['10', '11', '12']
     ];
-    const mesAtual = agora.getMonth(); // 0-11
+    const mesAtual = agora.getMonth();
     const anoAtual = agora.getFullYear();
     const indiceTrimestreAtual = Math.floor(mesAtual / 3);
     const mesesTrimestreAtual = trimestres[indiceTrimestreAtual].map(m => `${m}/${anoAtual}`);
     const indiceTrimestreAnterior = (indiceTrimestreAtual - 1 + 4) % 4;
     const anoAnterior = indiceTrimestreAtual === 0 ? anoAtual - 1 : anoAtual;
     const mesesTrimestreAnterior = trimestres[indiceTrimestreAnterior].map(m => `${m}/${anoAnterior}`);
-
-    for (const depto of departamentos) {
-      const dadosDepto = data.filter(d => d.nome_departamento === depto);
+  
+    const resultado = [];
+  
+    for (const departamento of departamentosUnicos) {
+      const dadosDepto = data.filter(d => d.departamento_id === departamento.id);
       let dadosAtuais = [];
       let dadosAnteriores = [];
-
-      switch (type) {
-        case 'Semanal':
+  
+      switch (type.toLocaleLowerCase()) {
+        case 'semanal':
           dadosAtuais = filtrarDados(dadosDepto, [mesAtualFormatado], null, semanaAtualIndex);
           dadosAnteriores = filtrarDados(dadosDepto, [mesAnteriorFormatado], null, semanaAtualIndex);
           break;
-        case 'Mensal':
+        case 'mensal':
           dadosAtuais = filtrarDados(dadosDepto, [mesAtualFormatado], semanasAteAgora);
           dadosAnteriores = filtrarDados(dadosDepto, [mesAnteriorFormatado], semanasAteAgora);
           break;
-        case 'Trimestral':
+        case 'trimestral':
           dadosAtuais = filtrarDados(dadosDepto, mesesTrimestreAtual);
           dadosAnteriores = filtrarDados(dadosDepto, mesesTrimestreAnterior);
           break;
       }
-
+  
       const fatores = [...new Set(
         dadosAtuais.map(d => (d.fator || '').trim()).filter(f => f.length > 0)
       )].join(', ');
-
+  
       const atual = this.calcularDados(dadosAtuais);
       const anterior = this.calcularDados(dadosAnteriores);
-
-      resultado[depto] = {
-        media_geral: atual.mediaNota,
-        media_anterior: anterior.mediaNota,
-        variacao: (atual.mediaNota - anterior.mediaNota).toFixed(2),
-        percentual_resposta_atual: atual.engajamento,
-        percentual_resposta_anterior: anterior.engajamento,
-        variacao_percentual_resposta: (atual.engajamento - anterior.engajamento).toFixed(2),
-        fator: fatores
-      };
+  
+      resultado.push({
+        id_departamento: departamento.id,
+        nome_departamento: departamento.nome,
+        media_atual: Number(atual.mediaNota),
+        media_anterior: Number(anterior.mediaNota),
+        variacao: Number((atual.mediaNota - anterior.mediaNota).toFixed(2)),
+        percentual_resposta: Number(atual.engajamento),
+        fatores_resposta: fatores
+      });
     }
-
+  
     return resultado;
   }
 }
