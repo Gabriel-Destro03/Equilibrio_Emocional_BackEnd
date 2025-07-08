@@ -90,7 +90,6 @@ class DashboardService {
   async mediaDepartamentos(data, type = 'Mensal') {
     const agora = new Date();
     const { semanaAtualIndex: semanaAtualIndex, semanasAteAgora } = await this.getSemanaInfo(agora.getDate());
-    
     const mesAtualFormatado = this.formatarMesAno(agora);
     const mesAnteriorDate = new Date(agora.getFullYear(), agora.getMonth() - 1, 1);
     const mesAnteriorFormatado = this.formatarMesAno(mesAnteriorDate);
