@@ -45,13 +45,15 @@ class DashboardService {
     }
   }
 
-  getSemanaInfo(dia) {
+  async getSemanaInfo(dia) {
     const qtnSemanaMes = ["primeira", "segunda", "terceira", "quarta", "quinta"];
     const index = Math.ceil(dia / 7) - 1;
+    let semanaAtualIndex = qtnSemanaMes[index];
     return {
       index,
       nome: qtnSemanaMes[index],
-      semanasAteAgora: qtnSemanaMes.slice(0, index + 1)
+      semanasAteAgora: qtnSemanaMes.slice(0, index + 1),
+      semanaAtualIndex: semanaAtualIndex
     };
   }
 
@@ -76,7 +78,7 @@ class DashboardService {
     const dataBase = new Date(agora.getFullYear(), agora.getMonth() + offsetMes, 1);
     const mesFormatado = this.formatarMesAno(dataBase);
 
-    const { semanasAteAgora } = this.getSemanaInfo(agora.getDate());
+    const { semanasAteAgora } = await this.getSemanaInfo(agora.getDate());
 
     const filtrado = data
       .filter(d => d.mes_ano_analise === mesFormatado)
@@ -87,8 +89,8 @@ class DashboardService {
 
   async mediaDepartamentos(data, type = 'Mensal') {
     const agora = new Date();
-    const { index: semanaAtualIndex, semanasAteAgora } = this.getSemanaInfo(agora.getDate());
-  
+    const { semanaAtualIndex: semanaAtualIndex, semanasAteAgora } = await this.getSemanaInfo(agora.getDate());
+    
     const mesAtualFormatado = this.formatarMesAno(agora);
     const mesAnteriorDate = new Date(agora.getFullYear(), agora.getMonth() - 1, 1);
     const mesAnteriorFormatado = this.formatarMesAno(mesAnteriorDate);
