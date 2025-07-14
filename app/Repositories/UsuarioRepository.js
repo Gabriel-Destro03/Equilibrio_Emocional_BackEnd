@@ -270,117 +270,109 @@ class UsuarioRepository {
 
     async getUsuariosByFilial(uid) {
         const supabase = this.supabase;
-    
-        // 1. Verifica as permissões do usuário
-        const { data: permissoesData, error: permissoesError } = await supabase
-            .from('usuario_permissoes')
-            .select(`
-                usuario:usuarios!inner(uid, id),
-                permissao:permissoes(tag)
-            `)
-            .eq('usuario.uid', uid);
-    
-        if (permissoesError) throw new Error(`Erro ao buscar permissões: ${permissoesError.message}`);
-    
-        const permissoes = permissoesData.map(p => p.permissao.tag);
-        const temPermissaoSuper = permissoes.includes('internal_super');
-    
-        if (temPermissaoSuper) return this.getAllUsuarios();
-    
-        const temPermissaoAcesso = permissoes.some(tag =>
-            ['branchCreate', 'rep_filial'].includes(tag)
-        );
-    
-        if (!temPermissaoAcesso) {
-            throw new Error('Usuário não tem permissão para acessar esta funcionalidade');
+      
+        // Busca dados do usuário para pegar filiais e departamentos que ele representa
+        const { data, error } = await supabase
+          .from('usuarios')
+          .select(`
+            id,
+            nome_completo,
+            uid,
+            usuario_departamento (
+              id_departamento,
+              is_representante
+            ),
+            usuario_filial (
+              id_filial,
+              is_representante
+            )
+          `)
+          .eq('uid', uid)
+          .single();
+      
+        if (error) {
+          console.error('Erro ao buscar dados:', error);
+          return [];
+        }
+      
+        // Extrai IDs onde é representante
+        const idsFiliaisRepresentante = data.usuario_filial
+          ?.filter(uf => uf.is_representante)
+          .map(uf => uf.id_filial) ?? [];
+      
+        const idsDepartamentosRepresentante = data.usuario_departamento
+          ?.filter(ud => ud.is_representante)
+          .map(ud => ud.id_departamento) ?? [];
+
+        if(idsFiliaisRepresentante.length == 0 && idsDepartamentosRepresentante.length == 0){
+            return [];
         }
         
-        // Extrai ID do usuário (assume que todas as linhas retornadas têm o mesmo `usuario.id`)
-        const idUsuario = permissoesData[0].usuario.id;
-
-        // 2. Busca as filiais do usuário
-        const { data: filiaisData, error: filiaisError } = await supabase
-            .from('usuario_filial')
+        let { data: usuarioData, error: errorData } = await supabase
+            .from('usuarios')
             .select(`
-                filial:filiais(id)
+                id,
+                uid,
+                nome_completo,
+                cargo,
+                email,
+                telefone,
+                status,
+                created_at,
+                usuario_filial (
+                id_filial,
+                    filiais (
+                        id,
+                        nome_filial
+                    )
+                ),
+                usuario_departamento (
+                    id_departamento,
+                    departamentos (
+                        id,
+                        nome_departamento
+                    )
+                )
             `)
-            .eq('id_usuario', idUsuario); // Melhor usar `id_usuario` se `usuario.uid` for igual a `usuarios.uid`
-    
-        if (filiaisError) throw new Error(`Erro ao buscar filiais: ${filiaisError.message}`);
-    
-        const filiaisIds = [...new Set(filiaisData.map(f => f.filial?.id).filter(Boolean))];
-        if (filiaisIds.length === 0) return [];
-    
-        // 3. Busca usuários e departamentos das filiais em paralelo
-        const [usuariosResult, departamentosResult] = await Promise.all([
-            supabase
-                .from('usuario_filial')
-                .select(`
-                    usuario:usuarios(
-                        id, uid, nome_completo, cargo,
-                        email, telefone, created_at, status
-                    ),
-                    filial:filiais(id, nome_filial)
-                `)
-                .in('id_filial', filiaisIds),
-                // .order('usuario.created_at', { ascending: false }),
-    
-            supabase
-                .from('usuario_departamento')
-                .select(`
-                    usuario:usuarios!inner(id, uid),
-                    departamento:departamentos(id, id_filial, nome_departamento)
-                `)
-                .in('departamentos.id_filial', filiaisIds)
-        ]);
-    
-        if (usuariosResult.error) throw new Error(`Erro ao buscar usuários: ${usuariosResult.error.message}`);
-        if (departamentosResult.error) throw new Error(`Erro ao buscar departamentos: ${departamentosResult.error.message}`);
-    
-        const usuariosData = usuariosResult.data;
-        const departamentosData = departamentosResult.data;
-    
-        // 4. Mapeia departamentos por usuário
-        const userDepartments = new Map();
-        for (const { usuario, departamento } of departamentosData) {
-            if (usuario && departamento) {
-                userDepartments.set(usuario.uid || usuario.id, {
-                    nome: departamento.nome_departamento,
-                    id: departamento.id
-                });
+        
+            if(idsFiliaisRepresentante.length > 0){
+                usuarioData = usuarioData.filter(u =>
+                    u.usuario_filial && idsFiliaisRepresentante.includes(u.usuario_filial[0].id_filial)
+                );
+            }else{
+                if(idsDepartamentosRepresentante.length > 0){
+                    usuarioData = usuarioData.filter(u =>
+                        u.usuario_filial && idsDepartamentosRepresentante.includes(u.usuario_departamento.id_departamento)
+                    );
+                }
             }
-        }
-    
-        // 5. Formata usuários e remove duplicatas
-        const usuariosFormatados = usuariosData.map(({ usuario, filial }) => {
-            const dep = userDepartments.get(usuario.uid || usuario.id);
-            return {
-                id: usuario.id,
-                uid: usuario.uid,
-                nome_completo: usuario.nome_completo,
-                cargo: usuario.cargo,
-                email: usuario.email,
-                telefone: usuario.telefone,
-                status: usuario.status,
-                created_at: usuario.created_at,
-                nome_filial: filial?.nome_filial || null,
-                id_filial: filial?.id || null,
-                departamento: dep?.nome || null,
-                id_departamento: dep?.id || null
-            };
+
+        // 6. Formata usuários no formato desejado
+        const usuariosFormatados = usuarioData.map(usuario => {
+            var filial = usuario.usuario_filial[0].filiais;
+            var departamento = usuario.usuario_departamento.departamentos;
+          return {
+            id: usuario.id,
+            uid: usuario.uid,
+            nome_completo: usuario.nome_completo,
+            cargo: usuario.cargo,
+            email: usuario.email,
+            telefone: usuario.telefone,
+            status: usuario.status,
+            created_at: usuario.created_at,
+            nome_filial: filial?.nome_filial || null,
+            id_filial: filial?.id || null,
+            departamento: departamento?.nome_departamento || null,
+            id_departamento: departamento?.id || null
+          };
         });
-    
-        // Remove duplicatas
-        const usuariosUnicos = [
-            ...new Map(usuariosFormatados.map(u => [u.uid || u.id, u])).values()
-        ];
 
-        // Ordena do mais recente para o mais antigo
-        usuariosUnicos.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-
-        return usuariosUnicos;
+        // 7. Ordena do mais recente para o mais antigo
+        usuariosFormatados.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        // 8. Retorna resultado final
+        return usuariosFormatados;
     }
-    
+        
 }
 
 module.exports = UsuarioRepository 
