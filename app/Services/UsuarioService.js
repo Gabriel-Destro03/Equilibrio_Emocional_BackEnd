@@ -294,6 +294,21 @@ class UsuarioService {
         }
 
         try {
+            const PERMISSOES = {
+                ADM: [7],
+                FILIAL: [2, 5],
+                DEPARTAMENTO: [3, 6]
+              };
+
+            const permissaoUser = await this.authService.getUserPermissions(uid);
+
+            const permissoes = permissaoUser.usuario_permissoes ?? [];
+            const possuiPermissao = (ids) =>
+                permissoes.some(p => ids.includes(p.id_permissao));
+            const isAdm = possuiPermissao(PERMISSOES.ADM);
+            const isRepresentanteFilial = possuiPermissao(PERMISSOES.FILIAL);
+            const isRepresentanteDepartamento = possuiPermissao(PERMISSOES.DEPARTAMENTO);
+
             return await this.repository.getUsuariosByFilial(uid)
         } catch (error) {
             throw new Error(`Erro ao buscar usuários da filial: ${error.message}`)

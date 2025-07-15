@@ -271,8 +271,8 @@ class UsuarioRepository {
     async getUsuariosByFilial(uid) {
         const supabase = this.supabase;
       
-        // Busca dados do usuário para pegar filiais e departamentos que ele representa
-        const { data, error } = await supabase
+        // 2. Busca filiais e departamentos representados
+        const { data: userData, error: errorUser } = await supabase
           .from('usuarios')
           .select(`
             id,
@@ -290,88 +290,102 @@ class UsuarioRepository {
           .eq('uid', uid)
           .single();
       
-        if (error) {
-          console.error('Erro ao buscar dados:', error);
+        if (errorUser || !userData) {
+          console.error('Erro ao buscar dados do usuário:', errorUser);
           return [];
         }
       
-        // Extrai IDs onde é representante
-        const idsFiliaisRepresentante = data.usuario_filial
-          ?.filter(uf => uf.is_representante)
-          .map(uf => uf.id_filial) ?? [];
+        const idsFiliaisRepresentante = userData.usuario_filial
+          ?.filter(f => f.is_representante)
+          .map(f => f.id_filial) ?? [];
       
-        const idsDepartamentosRepresentante = data.usuario_departamento
-          ?.filter(ud => ud.is_representante)
-          .map(ud => ud.id_departamento) ?? [];
-
-        if(idsFiliaisRepresentante.length == 0 && idsDepartamentosRepresentante.length == 0){
-            return [];
+        const idsDepartamentosRepresentante = userData.usuario_departamento
+          ?.filter(d => d.is_representante)
+          .map(d => d.id_departamento) ?? [];
+      
+        if (!isAdm && idsFiliaisRepresentante.length === 0 && idsDepartamentosRepresentante.length === 0) {
+          return [];
         }
-        
-        let { data: usuarioData, error: errorData } = await supabase
-            .from('usuarios')
-            .select(`
+      
+        // 3. Busca todos os usuários com vínculos
+        let { data: usuarios, error: errorUsuarios } = await supabase
+          .from('usuarios')
+          .select(`
+            id,
+            uid,
+            nome_completo,
+            cargo,
+            email,
+            telefone,
+            status,
+            created_at,
+            usuario_filial (
+              id_filial,
+              filiais (
                 id,
-                uid,
-                nome_completo,
-                cargo,
-                email,
-                telefone,
-                status,
-                created_at,
-                usuario_filial (
-                id_filial,
-                    filiais (
-                        id,
-                        nome_filial
-                    )
-                ),
-                usuario_departamento (
-                    id_departamento,
-                    departamentos (
-                        id,
-                        nome_departamento
-                    )
-                )
-            `)
-        
-            if(idsFiliaisRepresentante.length > 0){
-                usuarioData = usuarioData.filter(u =>
-                    u.usuario_filial && idsFiliaisRepresentante.includes(u.usuario_filial[0].id_filial)
-                );
-            }else{
-                if(idsDepartamentosRepresentante.length > 0){
-                    usuarioData = usuarioData.filter(u =>
-                        u.usuario_filial && idsDepartamentosRepresentante.includes(u.usuario_departamento.id_departamento)
-                    );
-                }
-            }
-
-        // 6. Formata usuários no formato desejado
-        const usuariosFormatados = usuarioData.map(usuario => {
-            var filial = usuario.usuario_filial[0].filiais;
-            var departamento = usuario.usuario_departamento.departamentos;
+                nome_filial
+              )
+            ),
+            usuario_departamento (
+              id_departamento,
+              departamentos (
+                id,
+                nome_departamento
+              )
+            )
+          `);
+      
+        if (errorUsuarios || !usuarios) {
+          console.error('Erro ao buscar usuários:', errorUsuarios);
+          return [];
+        }
+      
+        // 4. Filtra se não for ADM
+        if (!isAdm) {
+          const podeFiltrarPorFilial = isRepresentanteFilial && idsFiliaisRepresentante.length > 0;
+          const podeFiltrarPorDepartamento = isRepresentanteDepartamento && idsDepartamentosRepresentante.length > 0;
+      
+          if (podeFiltrarPorFilial) {
+            usuarios = usuarios.filter(u =>
+              u.usuario_filial?.[0] &&
+              idsFiliaisRepresentante.includes(u.usuario_filial[0].id_filial)
+            );
+          } else if (podeFiltrarPorDepartamento) {
+            usuarios = usuarios.filter(u =>
+              u.usuario_departamento?.[0] &&
+              idsDepartamentosRepresentante.includes(u.usuario_departamento[0].id_departamento)
+            );
+          } else {
+            return [];
+          }
+        }
+      
+        // 5. Formata resultado final
+        const usuariosFormatados = usuarios.map(u => {
+          const filial = u.usuario_filial?.[0]?.filiais ?? {};
+          const departamento = u.usuario_departamento?.[0]?.departamentos ?? {};
+      
           return {
-            id: usuario.id,
-            uid: usuario.uid,
-            nome_completo: usuario.nome_completo,
-            cargo: usuario.cargo,
-            email: usuario.email,
-            telefone: usuario.telefone,
-            status: usuario.status,
-            created_at: usuario.created_at,
-            nome_filial: filial?.nome_filial || null,
-            id_filial: filial?.id || null,
-            departamento: departamento?.nome_departamento || null,
-            id_departamento: departamento?.id || null
+            id: u.id,
+            uid: u.uid,
+            nome_completo: u.nome_completo,
+            cargo: u.cargo,
+            email: u.email,
+            telefone: u.telefone,
+            status: u.status,
+            created_at: u.created_at,
+            nome_filial: filial.nome_filial ?? null,
+            id_filial: filial.id ?? null,
+            departamento: departamento.nome_departamento ?? null,
+            id_departamento: departamento.id ?? null
           };
         });
-
-        // 7. Ordena do mais recente para o mais antigo
+      
+        // 6. Ordena do mais recente para o mais antigo
         usuariosFormatados.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-        // 8. Retorna resultado final
+      
         return usuariosFormatados;
-    }
+      }      
         
 }
 
