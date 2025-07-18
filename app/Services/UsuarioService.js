@@ -1,7 +1,8 @@
 'use strict'
 
 const UsuarioRepository = require('../Repositories/UsuarioRepository')
-const { AuthService } = require('./AuthService')
+const AuthRepository = require('../Repositories/AuthRepository')
+
 const UserRepository = require('../Repositories/UserRepository')
 const PasswordGenerator = require('../Utils/PasswordGenerator')
 const SendEmail = require('../Services/Emails/SendEmail')
@@ -14,7 +15,6 @@ const crypto = require('crypto')
 class UsuarioService {
     constructor() {
         this.repository = new UsuarioRepository()
-        this.authService = new AuthService()
         this.usuarioRepository = new UserRepository()
     }
 
@@ -300,16 +300,15 @@ class UsuarioService {
                 DEPARTAMENTO: [3, 6]
               };
 
-            const permissaoUser = await this.authService.getUserPermissions(uid);
-
-            const permissoes = permissaoUser.usuario_permissoes ?? [];
+            const permissaoUser = await this.repository.getUserPermissions(uid);
+             
+            const permissoes = permissaoUser.map(p => p.permissoes) ?? [];
             const possuiPermissao = (ids) =>
-                permissoes.some(p => ids.includes(p.id_permissao));
+                permissoes.some(p => ids.includes(p.id));
             const isAdm = possuiPermissao(PERMISSOES.ADM);
             const isRepresentanteFilial = possuiPermissao(PERMISSOES.FILIAL);
             const isRepresentanteDepartamento = possuiPermissao(PERMISSOES.DEPARTAMENTO);
-
-            return await this.repository.getUsuariosByFilial(uid)
+            return await this.repository.getUsuariosByFilial(uid, isAdm, isRepresentanteFilial,isRepresentanteDepartamento)
         } catch (error) {
             throw new Error(`Erro ao buscar usuários da filial: ${error.message}`)
         }

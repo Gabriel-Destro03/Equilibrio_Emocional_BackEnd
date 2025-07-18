@@ -268,9 +268,8 @@ class UsuarioRepository {
     }
     
 
-    async getUsuariosByFilial(uid) {
+    async getUsuariosByFilial(uid, isAdm, isRepresentanteFilial,isRepresentanteDepartamento) {
         const supabase = this.supabase;
-      
         // 2. Busca filiais e departamentos representados
         const { data: userData, error: errorUser } = await supabase
           .from('usuarios')
@@ -385,7 +384,28 @@ class UsuarioRepository {
         usuariosFormatados.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
       
         return usuariosFormatados;
-      }      
+    }    
+    
+    /**
+     * Get user permissions
+     * @param {string} userId - User ID
+     * @returns {Promise<Array>} User permissions
+     */
+    async getUserPermissions(userId) {
+        const { data, error } = await this.supabase
+            .from('usuario_permissoes')
+            .select(`
+                *,
+                permissoes:permissoes(*)
+            `)
+            .eq('uid', userId)
+
+        if (error) {
+            throw new Error('Erro ao buscar permissões do usuário')
+        }
+
+        return data
+    }
         
 }
 
