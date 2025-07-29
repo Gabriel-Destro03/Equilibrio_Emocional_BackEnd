@@ -125,6 +125,17 @@ class FilialService {
             throw new Error(`Erro ao buscar filiais do usuário: ${error.message}`)
         }
     }
+
+    async getFiliaisByEmpresaId(empresaId) {
+        if (!empresaId) {
+            throw new Error('ID da empresa é obrigatório')
+        }
+        try {
+            return await this.repository.getFiliaisByEmpresaId(empresaId)
+        } catch (error) {
+            throw new Error(`Erro ao buscar filiais da empresa: ${error.message}`)
+        }
+    }
 }
 
 module.exports = FilialService 

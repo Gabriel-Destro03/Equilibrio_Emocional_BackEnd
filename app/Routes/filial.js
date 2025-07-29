@@ -28,7 +28,6 @@ Route.group(() => {
    *         description: Não autorizado
    */
   Route.get('/', 'Api/FilialController.index')
-
   /**
    * @swagger
    * /api/filiais/{id}:
@@ -211,5 +210,30 @@ Route.group(() => {
    *         description: Não autorizado
    */
   Route.get('/user/:uid', 'Api/FilialController.getFiliaisByUser')
+
+  /**
+   * @swagger
+   * /api/filiais/empresa/{empresa_id}:
+   *   get:
+   *     tags:
+   *       - Filiais
+   *     summary: Lista todas as filiais de uma empresa específica
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - name: empresa_id
+   *         in: path
+   *         required: true
+   *         type: integer
+   *         description: ID da empresa
+   *     responses:
+   *       200:
+   *         description: Lista de filiais da empresa retornada com sucesso
+   *       400:
+   *         description: Erro ao buscar filiais da empresa
+   *       401:
+   *         description: Não autorizado
+   */
+  Route.get('/empresa/:empresa_id', 'Api/FilialController.getFiliaisByEmpresaId')
 })
 .prefix('/api/filiais')

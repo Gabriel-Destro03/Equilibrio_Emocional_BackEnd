@@ -134,7 +134,8 @@ Route.group(() => {
    *         description: Usuário não encontrado
    */
   Route.get('/email/:email', 'Api/UsuarioController.getByEmail')
-
+  Route.get('empresa/:empresa_id', 'Api/UsuarioController.getUsuarioByEmpresaId')
+  
   /**
    * @swagger
    * /api/usuarios:

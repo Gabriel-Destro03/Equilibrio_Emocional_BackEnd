@@ -69,6 +69,19 @@ class UsuarioService {
         }
     }
 
+    async getUsuarioByEmpresaId(empresa_id) {
+        if(!empresa_id) {
+            throw new Error('Id da Empresa é obrigatório')
+        }
+
+        try {
+            const usuarios = await this.repository.getUsuarioByEmpresaId(empresa_id)
+            return usuarios;
+        } catch (error) {
+          throw new Error(`Erro ao buscar usuários: ${error.message}`)  
+        }
+    }
+
     /**
      * Busca um usuário pelo email
      * @param {string} email - Email do usuário
@@ -102,7 +115,7 @@ class UsuarioService {
      * @throws {Error} Erro ao criar usuário ou dados inválidos
      */
     async createUsuario(usuarioData) {
-        const { nome_completo, email, telefone, cargo, id_filial, id_departamento } = usuarioData
+        const { nome_completo, email, telefone, cargo, id_filial, id_departamento, empresa_id } = usuarioData
 
 
         if (!nome_completo || !email || !telefone || !cargo) {
@@ -145,6 +158,7 @@ class UsuarioService {
                 telefone,
                 cargo,
                 uid: password,
+                empresa_id,
                 id_filial,
                 id_departamento
             })

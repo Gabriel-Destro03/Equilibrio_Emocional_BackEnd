@@ -94,6 +94,17 @@ class UsuarioRepository {
         return data
     }
 
+    async getUsuarioByEmpresaId(empresa_id) {
+        const { data, error } = await this.supabase
+            .from('usuarios')
+            .select('*')
+            .eq('empresa_id', empresa_id)
+            .order('id', { ascending: false })
+
+        if (error) throw new Error(error.message)
+        return data
+    }
+
     async getUsuarioByUid(uid) {
         const { data, error } = await this.supabase
             .from('usuarios')
@@ -169,7 +180,8 @@ class UsuarioRepository {
                     telefone: usuarioData.telefone,
                     cargo: usuarioData.cargo,
                     status: false,
-                    uid: usuarioData.uid
+                    uid: usuarioData.uid,
+                    empresa_id: usuarioData.empresa_id
                 }])
                 .select('*')
                 .order('id', { ascending: false })

@@ -58,6 +58,30 @@ Route.group(() => {
 
   /**
    * @swagger
+   * /api/departamentos/empresa/{empresa_id}:
+   *   get:
+   *     tags:
+   *       - Departamentos
+   *     summary: Lista todos os departamentos de uma empresa específica
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - name: empresa_id
+   *         in: path
+   *         required: true
+   *         type: string
+   *         description: ID da empresa
+   *     responses:
+   *       200:
+   *         description: Lista de departamentos da empresa retornada com sucesso
+   *       400:
+   *         description: Erro ao buscar departamentos da empresa
+   *       401:
+   *         description: Não autorizado
+   */
+  Route.get('/empresa/:empresa_id', 'Api/DepartamentoController.getByEmpresaId')
+  /**
+   * @swagger
    * /api/departamentos/filial/{filialId}:
    *   get:
    *     tags:

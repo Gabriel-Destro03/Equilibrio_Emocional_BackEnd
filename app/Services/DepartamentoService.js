@@ -1,10 +1,12 @@
 'use strict'
 
 const DepartamentoRepository = require('../Repositories/DepartamentoRepository')
+const FilialService = require('./FilialService')
 
 class DepartamentoService {
     constructor() {
         this.repository = new DepartamentoRepository()
+        this.filialService = new FilialService()
     }
 
     async getAllDepartamentos() {
@@ -43,6 +45,24 @@ class DepartamentoService {
         }
     }
 
+    async getByEmpresaId(empresa_id) {
+        if (!empresa_id) {
+            throw new Error('ID da empresa é obrigatório')
+        }
+
+        try {
+            const filiais = await this.filialService.getFiliaisByEmpresaId(empresa_id);
+            if(filiais.length == 0) return [];
+
+            const filiaisId = filiais.map(f => f.id);
+            
+            return await this.repository.getDepartamentosByFiliaisId(filiaisId)
+        } catch (error) {
+            throw new Error(`Erro ao buscar departamentos da empresa: ${error.message}`)
+        }
+    }
+
+    
     async createDepartamento(departamentoData) {
         const { nome_departamento, id_filial } = departamentoData
 

@@ -129,6 +129,7 @@ class AuthService {
                 filiais: filiaisFormatadas,
                 permissoes: userPerm.map(p => p.permissoes.tag),
                 uid: usuario.uid,
+                empresa_id: usuario.empresa_id,
                 status: usuario.status
             },
             token: tokenInfo.token,

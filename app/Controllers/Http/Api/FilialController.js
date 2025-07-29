@@ -98,6 +98,18 @@ class FilialController {
             return response.status(400).json({ error: error.message })
         }
     }
+
+    /**
+     * Lista todas as filiais de uma empresa específica
+     */
+    async getFiliaisByEmpresaId({ params, response }) {
+        try {
+            const filiais = await this.service.getFiliaisByEmpresaId(params.empresa_id)
+            return response.status(200).json(filiais)
+        } catch (error) {
+            return response.status(400).json({ error: error.message })
+        }
+    }
 }
 
 module.exports = FilialController 

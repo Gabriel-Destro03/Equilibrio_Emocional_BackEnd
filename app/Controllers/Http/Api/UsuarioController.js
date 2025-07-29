@@ -54,6 +54,15 @@ class UsuarioController {
             return response.status(400).json({ error: error.message })
         }
     }
+    
+    async getUsuarioByEmpresaId({params, response}) {
+        try {
+            const usuarios = await this.service.getUsuarioByEmpresaId(params.empresa_id)
+            return response.status(200).json(usuarios)
+        } catch (error) {
+            return response.status(400).json({ error: error.message })
+        }
+    }
 
     /**
      * Cria um novo usuário
@@ -61,7 +70,7 @@ class UsuarioController {
     async store({ request, response }) {
         try {
             
-            const usuarioData = request.only(['nome_completo', 'email', 'telefone', 'cargo', 'id_filial', 'id_departamento'])
+            const usuarioData = request.only(['nome_completo', 'email', 'telefone', 'cargo', 'id_filial', 'id_departamento', 'empresa_id'])
             
             const usuario = await this.service.createUsuario(usuarioData)
             return response.status(201).json(usuario)

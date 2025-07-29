@@ -27,6 +27,18 @@ class FilialRepository {
         return data
     }
 
+    async getFiliaisByEmpresaId(empresaId) {
+        if (!empresaId) {
+            throw new Error('ID da empresa é obrigatório')
+        }
+        const { data, error } = await this.supabase
+            .from('filiais')
+            .select('*')
+            .eq('empresa_id', empresaId)
+        if (error) throw new Error(error.message)
+        return data
+    }
+
     async createFilial(filialData) {
         const { data, error } = await this.supabase
             .from('filiais')

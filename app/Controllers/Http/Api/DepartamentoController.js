@@ -44,6 +44,18 @@ class DepartamentoController {
     }
 
     /**
+     * Lista departamentos por empresa
+     */
+    async getByEmpresaId({ params, response }) {
+        try {
+            const departamentos = await this.service.getByEmpresaId(params.empresa_id)
+            return response.status(200).json(departamentos)
+        } catch (error) {
+            return response.status(400).json({ error: error.message })
+        }
+    }
+
+    /**
      * Cria um novo departamento
      */
     async store({ request, response }) {

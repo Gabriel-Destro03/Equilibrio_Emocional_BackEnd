@@ -79,11 +79,28 @@ class DepartamentoRepository {
                     endereco
                 )
             `)
-            .eq('filial_id', filialId)
+            .eq('id_filial', filialId)
 
         if (error) throw new Error(error.message)
         return data
     }
+
+    async getDepartamentosByFiliaisId(filiaisId){
+        if (!Array.isArray(filiaisId) || filiaisId.length === 0) {
+            return []
+        }
+
+        const { data, error } = await this.supabase
+            .from('departamentos')
+            .select(`
+                *
+            `)
+            .in('id_filial', filiaisId)
+
+        if (error) throw new Error(error.message)
+        return data 
+    }
+
 
     async createDepartamento(departamentoData) {
         const { data, error } = await this.supabase
