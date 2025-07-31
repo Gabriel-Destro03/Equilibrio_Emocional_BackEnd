@@ -54,7 +54,7 @@ class EmpresaController {
     async update({ params, request, response }) {
         try {
             const empresaData = request.only([
-                'nome_fantasia', 'razao_social', 'cnpj', 'data_fundacao', 'ramo_atividade',
+                'nome_fantasia', 'razao_social', 'cnpj', 'ramo_atividade',
                 'endereco', 'bairro', 'cidade', 'estado', 'cep', 'pais',
                 'telefone', 'email', 'site', 'status', 'plano', 'logo_url', 'responsaveis'
             ])
@@ -115,6 +115,18 @@ class EmpresaController {
             return response.status(200).json(empresa);
         } catch (error) {
             return response.status(400).json({ error: error.message });
+        }
+    }
+
+    /**
+     * Lista representantes de uma empresa
+     */
+    async getRepresentantesByEmpresaId({ params, response }) {
+        try {
+            const representantes = await this.service.getRepresentantesByEmpresaId(params.id)
+            return response.status(200).json(representantes)
+        } catch (error) {
+            return response.status(400).json({ error: error.message })
         }
     }
 }

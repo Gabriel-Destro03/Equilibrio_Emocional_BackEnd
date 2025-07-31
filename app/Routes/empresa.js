@@ -14,6 +14,7 @@ Route.group(() => {
   // Route.get('/hierarquia', 'Api/EmpresaController.getEmpresaFiliaisDepartamentos')
   Route.get('/hierarquia/:id', 'Api/EmpresaController.getEmpresaFiliaisDepartamentosByEmpresaId')
   Route.get('/:id', 'Api/EmpresaController.show')
+  Route.get('/responsaveis/:id', 'Api/EmpresaController.getRepresentantesByEmpresaId')
   Route.post('/', 'Api/EmpresaController.store')
   Route.put('/:id', 'Api/EmpresaController.update')
   Route.delete('/:id', 'Api/EmpresaController.destroy')

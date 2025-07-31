@@ -100,6 +100,18 @@ class EmpresaRepository {
         if (error) throw new Error(error.message);
         return data;
     }
+
+    async getRepresentantesByEmpresaId(empresaId) {
+        if (!empresaId) {
+            throw new Error('ID da empresa é obrigatório')
+        }
+        const { data, error } = await this.supabase
+            .from('representantes_empresas')
+            .select('*, usuario:usuarios(*)')
+            .eq('empresa_id', empresaId)
+        if (error) throw new Error(error.message)
+        return data
+    }
 }
 
 module.exports = EmpresaRepository 
