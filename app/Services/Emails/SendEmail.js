@@ -1,6 +1,9 @@
+const EmailLogService = use('App/Services/EmailLogService')
+
 class SendEmail {
   constructor() {
     this.resend = null
+    this.emailLogService = new EmailLogService()
     this.initializeResend()
   }
 
@@ -19,11 +22,25 @@ class SendEmail {
    * @param {string} options.to Recipient email address
    * @param {string} options.subject Email subject
    * @param {string} options.html Email content in HTML format
-   * * @param {string} options.title title content in title format
+   * @param {string} options.title title content in title format
+   * @param {string} options.emailType Type of email (welcome, reset_password, etc)
+   * @param {string} options.userId User ID related to the email
    * @returns {Promise} Resend API response
    */
-  async sendEmail({ to, subject, html, title }) {
+  async sendEmail({ to, subject, html, title, emailType, userId }) {
+    let emailLogId = null
+    
     try {
+      // Cria log antes do envio
+      const emailLog = await this.emailLogService.createEmailLog({
+        to,
+        subject,
+        html,
+        emailType,
+        userId
+      })
+      emailLogId = emailLog.id
+
       if (!this.resend) {
         await this.initializeResend()
       }
@@ -114,10 +131,24 @@ class SendEmail {
         html: body,
       })
 
-      return { success: true, data }
+      const result = { success: true, data }
+      
+      // Atualiza log após envio bem-sucedido
+      if (emailLogId) {
+        await this.emailLogService.updateEmailLogAfterSend(emailLogId, result)
+      }
+
+      return result
     } catch (error) {
       console.error('Error sending email:', error)
-      return { success: false, error: error.message }
+      const result = { success: false, error: error.message }
+      
+      // Atualiza log após falha
+      if (emailLogId) {
+        await this.emailLogService.updateEmailLogAfterSend(emailLogId, result)
+      }
+
+      return result
     }
   }
 
@@ -128,7 +159,7 @@ class SendEmail {
    * @param {string} password User's password
    * @returns {Promise} Resend API response
    */
-  async sendWelcomeEmail(email, link, code) {
+  async sendWelcomeEmail(email, link, code, userId = null) {
     const html = `
       <p style="color: #8779c5;">Estamos felizes em ter você com a gente.</p>
 
@@ -160,12 +191,14 @@ class SendEmail {
       to: email,
       subject: 'Bem-vindo ao Clara Equilibrio Emocional',
       html,
-      title: "Bem-vindo(a) ao Clara Equilíbrio Emocional!"
+      title: "Bem-vindo(a) ao Clara Equilíbrio Emocional!",
+      emailType: 'welcome',
+      userId
     })
   }
 
 
-  async sendResetPasswordEmail(email, name, codigo, link) {
+  async sendResetPasswordEmail(email, name, codigo, link, userId = null) {
     const html = `
       <p>Olá <strong>${name}</strong>,</p>
       <p>Recebemos uma solicitação para redefinir sua senha. Por segurança, geramos um código exclusivo que confirma que você é o titular da conta.</p>
@@ -180,7 +213,9 @@ class SendEmail {
       to: email,
       subject: 'Redefinição de Senha da Clara Equilibrio Emocional',
       html,
-      title: "Redefinição de Senha"
+      title: "Redefinição de Senha",
+      emailType: 'reset_password',
+      userId
     })
   }
 }
