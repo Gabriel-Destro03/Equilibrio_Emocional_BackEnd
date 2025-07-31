@@ -290,4 +290,90 @@ Route.group('auth', () => {
    */
   Route.post('/define-password', 'Api/AuthController.definePassword')
 
+  /**
+   * @swagger
+   * /auth/active-user:
+   *   post:
+   *     tags:
+   *       - Auth
+   *     summary: Cria um novo usuário no sistema de autenticação
+   *     description: Cria um novo usuário no sistema de autenticação com validações de email, senha e verificação de usuário existente
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             required:
+   *               - email
+   *               - password
+   *             properties:
+   *               email:
+   *                 type: string
+   *                 format: email
+   *                 description: Email do usuário
+   *                 example: usuario@exemplo.com
+   *               password:
+   *                 type: string
+   *                 description: Senha do usuário (mínimo 8 caracteres)
+   *                 example: "12345678"
+   *     responses:
+   *       200:
+   *         description: Usuário criado com sucesso
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   example: true
+   *                 message:
+   *                   type: string
+   *                   example: Usuário criado com sucesso
+   *                 data:
+   *                   type: object
+   *                   description: Dados do usuário criado
+   *       400:
+   *         description: Dados inválidos
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   example: false
+   *                 message:
+   *                   type: string
+   *                   example: Email e senha são obrigatórios
+   *       409:
+   *         description: Usuário já existe
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   example: false
+   *                 message:
+   *                   type: string
+   *                   example: Usuário já existe no sistema
+   *       500:
+   *         description: Erro interno do servidor
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   example: false
+   *                 message:
+   *                   type: string
+   *                   example: Erro ao criar usuário
+   */
+  Route.post('/active-user', 'Api/AuthController.activeUser')
+
 }).prefix('/auth')

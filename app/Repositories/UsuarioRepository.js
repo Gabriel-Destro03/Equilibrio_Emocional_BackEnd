@@ -270,7 +270,7 @@ class UsuarioRepository {
             const { data, error} = await this.supabase
                 .from('usuarios')
                 .update({
-                    status: !status
+                    status: status
                 })
                 .eq('id', id)
                 .select()

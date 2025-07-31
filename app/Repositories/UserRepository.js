@@ -11,7 +11,7 @@ class UserRepository {
     try {
       const { data, error } = await this.supabase
         .from('usuarios')
-        .select('uid, email, nome_completo')
+        .select('id', 'uid, email, nome_completo')
         .eq('email', email)
         .single()
 
