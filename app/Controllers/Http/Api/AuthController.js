@@ -271,6 +271,63 @@ class AuthController {
       })
     }
   }
+
+  /**
+   * Active user (create new user in authentication system)
+   * @param {object} ctx
+   * @param {Request} ctx.request
+   * @param {Response} ctx.response
+   */
+  async activeUser({ request, response }) {
+    try {
+      const { email, password } = request.all()
+      
+      // Validate required fields
+      if (!email || !password) {
+        return response.status(400).json({
+          success: false,
+          message: 'Email e senha são obrigatórios'
+        })
+      }
+
+      const result = await this.authService.activeUser(email, password)
+      
+      return response.json({
+        success: true,
+        message: result.message,
+        data: result.user
+      })
+    } catch (error) {
+      console.error('Active user error in controller:', error)
+      
+      // Tratamento específico de erros
+      if (error.message.includes('já existe')) {
+        return response.status(409).json({
+          success: false,
+          message: error.message
+        })
+      }
+      
+      if (error.message.includes('Formato de email inválido')) {
+        return response.status(400).json({
+          success: false,
+          message: error.message
+        })
+      }
+      
+      if (error.message.includes('senha deve ter pelo menos 8 caracteres')) {
+        return response.status(400).json({
+          success: false,
+          message: error.message
+        })
+      }
+      
+      return response.status(500).json({
+        success: false,
+        message: error.message || 'Erro ao criar usuário'
+      })
+    }
+  }
 }
 
 module.exports = AuthController

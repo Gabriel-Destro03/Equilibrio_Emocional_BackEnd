@@ -5,6 +5,7 @@ const UsuarioRepository = require('../Repositories/UsuarioRepository')
 const TokenService = require('./tokens/TokenService')
 const UserRepository = require('../Repositories/UserRepository')
 const SendEmail = require('./Emails/SendEmail')
+const { createClient } = require('@supabase/supabase-js')
 const crypto = require('crypto')
 
 class AuthService {
@@ -59,6 +60,9 @@ class AuthService {
                 throw new Error('Email e senha são obrigatórios')
             }
 
+            // Authenticate with Supabase
+            const authData = await this.repository.authenticateUser(email, password)
+            
             const auth = await this.repository.signUp(email, password)
 
             if (!auth || !auth.user) {
@@ -68,6 +72,99 @@ class AuthService {
             return auth
         } catch (error) {
             console.error('AuthService: Erro no signUp:', error)
+            throw new Error(`Erro ao criar usuário: ${error.message}`)
+        }
+    }
+
+    /**
+     * Cria um novo usuário no sistema de autenticação
+     * @param {string} email - Email do usuário
+     * @param {string} password - Senha do usuário
+     * @returns {Promise<Object>} Dados do usuário criado
+     * @throws {Error} Erro ao criar usuário
+     */
+    async activeUser(email, password) {
+        try {
+            
+            if (!email || !password) {
+                throw new Error('Email e senha são obrigatórios')
+            }
+
+            // Validar formato do email
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+            if (!emailRegex.test(email)) {
+                throw new Error('Formato de email inválido')
+            }
+
+            // Validar força da senha
+            if (password.length < 8) {
+                throw new Error('A senha deve ter pelo menos 8 caracteres')
+            }
+
+            // Verificar se o usuário já existe na tabela de usuários
+            let existingUser = null
+            try {
+                existingUser = await this.userRepository.findByEmail(email)
+            } catch (error) {
+                // Se o erro for "não encontrado", continuar
+                if (!error.message.includes('não encontrado') && !error.message.includes('not found') && !error.message.includes('já existe')) {
+                    throw error
+                }
+                // Se o erro for "já existe", propagar
+                if (error.message.includes('já existe')) {
+                    throw error
+                }
+            }
+
+            // Verificar se o usuário já existe no sistema de autenticação (Supabase Auth)
+            try {
+                const supabaseAdmin = createClient(
+                    process.env.VITE_SUPABASE_URL,
+                    process.env.VITE_SUPABASE_SERVICE_ROLE_KEY
+                )
+
+                // Buscar usuário por email no sistema de autenticação
+                const { data: authUsers, error: authError } = await supabaseAdmin.auth.admin.listUsers()
+                
+                if (authError) {
+                    console.error('Erro ao listar usuários:', authError)
+                    throw new Error('Erro ao verificar usuário no sistema de autenticação')
+                }
+
+                // Verificar se existe um usuário com o email fornecido
+                const existingAuthUser = authUsers.users.find(user => user.email === email)
+                
+                if (existingAuthUser) {
+                    throw new Error('Usuário já existe no sistema de autenticação')
+                }
+            } catch (error) {
+                // Se o erro for específico sobre usuário já existir, propagar
+                if (error.message.includes('já existe')) {
+                    throw error
+                }
+                // Para outros erros, continuar (pode ser erro de conexão, etc.)
+                console.error('Erro ao verificar usuário no auth:', error)
+            }
+
+            // Criar usuário no sistema de autenticação
+            const auth = await this.repository.signUp(email, password)
+
+            if (!auth || !auth.user) {
+                throw new Error('Erro ao criar usuário no sistema de autenticação')
+            }
+
+            // Se o usuário existir na tabela, atualizar o UID
+            if (existingUser) {
+                await this.usuarioRepository.updateUsuarioUId(existingUser.id, auth.user.id)
+            }
+
+            return {
+                success: true,
+                message: 'Usuário criado com sucesso',
+                user: auth.user
+            }
+        } catch (error) {
+            console.error('AuthService: Erro no activeUser:', error)
             throw new Error(`Erro ao criar usuário: ${error.message}`)
         }
     }

@@ -218,10 +218,8 @@ class UsuarioRepository {
     }
 
     async updateUsuario(id, usuarioData) {
-        const supabase = this.supabase;
-    
         // Atualiza o usuário
-        const { data, error } = await supabase
+        const { data, error } = await this.supabase
             .from('usuarios')
             .update({
                 nome_completo: usuarioData.nome_completo,
@@ -261,10 +259,9 @@ class UsuarioRepository {
     }
 
     async updateUsuarioUId(id, uid) {
-        const supabase = this.supabase;
     
         // Atualiza o usuário
-        const { data, error } = await supabase
+        const { data, error } = await this.supabase
             .from('usuarios')
             .update({
                 uid: uid,
@@ -279,32 +276,54 @@ class UsuarioRepository {
         return data;
     }
     
+    async inactivateUsuario (id, status){
+        try {
+            // Atualiza o status
+            const { data, error} = await this.supabase
+                .from('usuarios')
+                .update({
+                    status: status
+                })
+                .eq('id', id)
+                .select()
+                .single();
+
+            if (error) {
+                throw new Error(`Erro ao atualizar usuário: ${error.message}`);
+            }
+            
+            return data;
+        } catch (error) {
+            console.error('Erro no inactivateUsuario:', error);
+            throw new Error(`Erro ao atualizar usuário: ${error.message}`);
+        }
+    }
 
     async getUsuariosByFilial(uid, isAdm, isRepresentanteFilial,isRepresentanteDepartamento) {
-        const supabase = this.supabase;
-        // 2. Busca filiais e departamentos representados
-        const { data: userData, error: errorUser } = await supabase
-          .from('usuarios')
-          .select(`
-            id,
-            nome_completo,
-            uid,
-            usuario_departamento (
-              id_departamento,
-              is_representante
-            ),
-            usuario_filial (
-              id_filial,
-              is_representante
-            )
-          `)
-          .eq('uid', uid)
-          .single();
-      
-        if (errorUser || !userData) {
-          console.error('Erro ao buscar dados do usuário:', errorUser);
-          return [];
-        }
+        try {
+            // 2. Busca filiais e departamentos representados
+            const { data: userData, error: errorUser } = await this.supabase
+              .from('usuarios')
+              .select(`
+                id,
+                nome_completo,
+                uid,
+                usuario_departamento (
+                  id_departamento,
+                  is_representante
+                ),
+                usuario_filial (
+                  id_filial,
+                  is_representante
+                )
+              `)
+              .eq('uid', uid)
+              .single();
+          
+            if (errorUser || !userData) {
+              console.error('Erro ao buscar dados do usuário:', errorUser);
+              return [];
+            }
       
         const idsFiliaisRepresentante = userData.usuario_filial
           ?.filter(f => f.is_representante)
@@ -319,7 +338,7 @@ class UsuarioRepository {
         }
       
         // 3. Busca todos os usuários com vínculos
-        let { data: usuarios, error: errorUsuarios } = await supabase
+        let { data: usuarios, error: errorUsuarios } = await this.supabase
           .from('usuarios')
           .select(`
             id,
@@ -396,6 +415,10 @@ class UsuarioRepository {
         usuariosFormatados.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
       
         return usuariosFormatados;
+        } catch (error) {
+            console.error('Erro no getUsuariosByFilial:', error);
+            throw new Error(`Erro ao buscar usuários da filial: ${error.message}`);
+        }
     }    
     
     /**
@@ -404,19 +427,25 @@ class UsuarioRepository {
      * @returns {Promise<Array>} User permissions
      */
     async getUserPermissions(userId) {
-        const { data, error } = await this.supabase
-            .from('usuario_permissoes')
-            .select(`
-                *,
-                permissoes:permissoes(*)
-            `)
-            .eq('uid', userId)
+        try {
+            const { data, error } = await this.supabase
+                .from('usuario_permissoes')
+                .select(`
+                    *,
+                    permissoes:permissoes(*)
+                `)
+                .eq('uid', userId)
 
-        if (error) {
-            throw new Error('Erro ao buscar permissões do usuário')
+            if (error) {
+                console.error('Erro ao buscar permissões:', error)
+                throw new Error(`Erro ao buscar permissões do usuário: ${error.message}`)
+            }
+
+            return data || []
+        } catch (error) {
+            console.error('Erro no getUserPermissions:', error)
+            throw new Error(`Erro ao buscar permissões do usuário: ${error.message}`)
         }
-
-        return data
     }
         
 }

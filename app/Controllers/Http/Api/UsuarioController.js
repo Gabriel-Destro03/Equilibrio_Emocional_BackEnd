@@ -95,15 +95,35 @@ class UsuarioController {
     /**
      * Altera o status do usuário
      */
-    async changeStatus({ params, response }) {
+    async changeStatus({ params, request, response }) {
         try {
+            const statusData = request.only('status')
+            
+            if (statusData.status === undefined || statusData.status === null) {
+                return response.status(400).json({ error: 'Status é obrigatório' })
+            }
+
+            // Converte o status para boolean se for string
+            let statusValue = statusData.status
+            if (typeof statusValue === 'string') {
+                if (statusValue.toLowerCase() === 'true') {
+                    statusValue = true
+                } else if (statusValue.toLowerCase() === 'false') {
+                    statusValue = false
+                } else {
+                    return response.status(400).json({ error: 'Status deve ser um valor booleano (true/false)' })
+                }
+            } else if (typeof statusValue !== 'boolean') {
+                return response.status(400).json({ error: 'Status deve ser um valor booleano (true/false)' })
+            }
+
             const usuario = await this.service.getUsuarioById(params.id)
 
             if (!usuario) {
                 return response.status(404).json({ error: 'Usuário não encontrado' })
             }
 
-            const usuarioAtualizado = await this.service.changeStatus(params.id)
+            const usuarioAtualizado = await this.service.changeStatus(params.id, statusValue)
             return response.status(200).json(usuarioAtualizado)
         } catch (error) {
             return response.status(400).json({ error: error.message })
@@ -113,9 +133,29 @@ class UsuarioController {
     /**
      * Inativa um usuário
      */
-    async destroy({ params, response }) {
+    async destroy({ params, request, response }) {
         try {
-            const usuarioAtualizado = await this.service.inactivateUsuario(params.id)
+            const statusData = request.only('status')
+            
+            if (statusData.status === undefined || statusData.status === null) {
+                return response.status(400).json({ error: 'Status é obrigatório' })
+            }
+
+            // Converte o status para boolean se for string
+            let statusValue = statusData.status
+            if (typeof statusValue === 'string') {
+                if (statusValue.toLowerCase() === 'true') {
+                    statusValue = true
+                } else if (statusValue.toLowerCase() === 'false') {
+                    statusValue = false
+                } else {
+                    return response.status(400).json({ error: 'Status deve ser um valor booleano (true/false)' })
+                }
+            } else if (typeof statusValue !== 'boolean') {
+                return response.status(400).json({ error: 'Status deve ser um valor booleano (true/false)' })
+            }
+
+            const usuarioAtualizado = await this.service.inactivateUsuario(params.id, statusValue)
             return response.status(200).json(usuarioAtualizado)
         } catch (error) {
             return response.status(400).json({ error: error.message })
