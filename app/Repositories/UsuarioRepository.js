@@ -186,19 +186,22 @@ class UsuarioRepository {
                 .select('*')
                 .order('id', { ascending: false })
                 .single()
+            
+            if (usuarioData.id_filial) {
+                await this.supabase.from('usuario_filial')
+                    .insert([{
+                        id_usuario: data.id,
+                            id_filial: usuarioData.id_filial
+                        }]);
+            }
 
-            await this.supabase.from('usuario_filial')
-                .insert([{
-                    id_usuario: data.id,
-                    id_filial: usuarioData.id_filial
-                }]);
-
-            await this.supabase.from('usuario_departamento')
-                .insert([{
-                    id_usuario: data.id,
-                    id_departamento: usuarioData.id_departamento
-                }])
-
+            if (usuarioData.id_departamento) {
+                await this.supabase.from('usuario_departamento')
+                    .insert([{
+                        id_usuario: data.id,
+                        id_departamento: usuarioData.id_departamento
+                    }])
+            }
 
             if (error) {
                 console.error('Erro ao criar usuário no banco:', error)

@@ -218,6 +218,25 @@ class SendEmail {
       userId
     })
   }
+
+  async sendCodigoClienteEmail(email, name, codigo, userId = null) {
+    const html = `
+      <p>Olá <strong>${name}</strong>,</p>
+      <p>Recebemos uma solicitação para cadastro. Por segurança, geramos um código exclusivo que confirma que você é o titular da conta.</p>
+      <p>Use o código abaixo para concluir o processo de redefinição:</p>
+      <div class="code">${codigo}</div>
+      <p>Se você não solicitou essa alteração, pode ignorar este e-mail com segurança.</p>
+    `
+
+    return this.sendEmail({
+      to: email,
+      subject: 'Código de Verificação da Clara Equilibrio Emocional',
+      html,
+      title: "Código de Verificação",
+      emailType: 'codigo_cliente',
+      userId
+    })
+  }
 }
 
 module.exports = new SendEmail() 
