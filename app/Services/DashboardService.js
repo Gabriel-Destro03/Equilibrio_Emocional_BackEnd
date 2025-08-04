@@ -45,23 +45,12 @@ class DashboardService {
     }
   }
 
-  async getSemanaInfo(dia) {
-    const qtnSemanaMes = ["primeira", "segunda", "terceira", "quarta", "quinta"];
-    const index = Math.ceil(dia / 7) - 1;
-    let semanaAtualIndex = qtnSemanaMes[index];
-    return {
-      index,
-      nome: qtnSemanaMes[index],
-      semanasAteAgora: qtnSemanaMes.slice(0, index + 1),
-      semanaAtualIndex: semanaAtualIndex
-    };
-  }
-
   formatarMesAno(date) {
     return `${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()}`;
   }
 
   calcularDados(data) {
+    console.log(data)
     const respondentes = data.filter(d => d.respondeu_na_semana === "sim");
     const total = data.length;
     const totalRespondentes = respondentes.length;
@@ -73,23 +62,38 @@ class DashboardService {
     return { mediaNota, engajamento };
   }
 
+  formatarDiaMes(date) {
+    const dia = String(date.getDate()).padStart(2, '0');
+    const mes = String(date.getMonth() + 1).padStart(2, '0');
+    return `${dia}/${mes}`;
+  }
+
   async calcularMedia(data, offsetMes) {
     const agora = new Date();
     const dataBase = new Date(agora.getFullYear(), agora.getMonth() + offsetMes, 1);
     const mesFormatado = this.formatarMesAno(dataBase);
 
-    const { semanasAteAgora } = await this.getSemanaInfo(agora.getDate());
-
-    const filtrado = data
+    let filtrado = data
       .filter(d => d.mes_ano_analise === mesFormatado)
-      .filter(d => semanasAteAgora.includes(d.semana_nome));
+      
+      //console.log(filtrado)
 
+    if(offsetMes === 0) {
+      const primeiroDiaSemana = new Date(agora);
+      primeiroDiaSemana.setDate(agora.getDate() - agora.getDay()); // domingo da semana atual
+
+      const ultimoDiaSemana = new Date(primeiroDiaSemana);
+      ultimoDiaSemana.setDate(primeiroDiaSemana.getDate() + 6); // sábado da semana atual
+      
+      var semana_texto = `${this.formatarDiaMes(primeiroDiaSemana)} a ${this.formatarDiaMes(ultimoDiaSemana)}`
+      filtrado = filtrado.filter(d => d.semana_texto == semana_texto);
+    }
     return this.calcularDados(filtrado);
   }
 
   async mediaDepartamentos(data, type = 'Mensal') {
     const agora = new Date();
-    const { semanaAtualIndex: semanaAtualIndex, semanasAteAgora } = await this.getSemanaInfo(agora.getDate());
+    
     const mesAtualFormatado = this.formatarMesAno(agora);
     const mesAnteriorDate = new Date(agora.getFullYear(), agora.getMonth() - 1, 1);
     const mesAnteriorFormatado = this.formatarMesAno(mesAnteriorDate);
@@ -104,11 +108,10 @@ class DashboardService {
       ).values()
     ];
   
-    const filtrarDados = (dados, filtroMeses, semanas = null, semanaIndex = null) => {
+    const filtrarDados = (dados, filtroMeses, semanas = null) => {
       return dados.filter(d =>
         filtroMeses.includes(d.mes_ano_analise) &&
-        (semanas ? semanas.includes(d.semana_nome) : true) &&
-        (semanaIndex !== null ? d.semana_nome == semanaIndex : true)
+        (semanas ? d => d.semana_texto == semana_texto : true)
       );
     };
   
@@ -135,12 +138,28 @@ class DashboardService {
   
       switch (type.toLocaleLowerCase()) {
         case 'semanal':
-          dadosAtuais = filtrarDados(dadosDepto, [mesAtualFormatado], null, semanaAtualIndex);
-          dadosAnteriores = filtrarDados(dadosDepto, [mesAnteriorFormatado], null, semanaAtualIndex);
+          const primeiroDiaSemanaAtual = new Date(agora);
+          primeiroDiaSemanaAtual.setDate(agora.getDate() - agora.getDay()); // domingo da semana atual
+  
+          const ultimoDiaSemanaAtual = new Date(primeiroDiaSemanaAtual);
+            ultimoDiaSemanaAtual.setDate(primeiroDiaSemanaAtual.getDate() + 6); // sábado da semana atual
+          
+          var semana_atual = `${this.formatarDiaMes(primeiroDiaSemanaAtual)} a ${this.formatarDiaMes(ultimoDiaSemanaAtual)}`
+          
+          const primeiroDiaSemanaPassada = new Date(primeiroDiaSemanaAtual);
+            primeiroDiaSemanaPassada.setDate(primeiroDiaSemanaAtual.getDate() - 7); // domingo da semana passada
+
+          const ultimoDiaSemanaPassada = new Date(primeiroDiaSemanaPassada);
+            ultimoDiaSemanaPassada.setDate(primeiroDiaSemanaPassada.getDate() + 6); // sábado da semana passada
+
+          var semana_passada = `${this.formatarDiaMes(primeiroDiaSemanaPassada)} a ${this.formatarDiaMes(ultimoDiaSemanaPassada)}`
+
+          dadosAtuais = filtrarDados(dadosDepto, [mesAtualFormatado], semana_atual);
+          dadosAnteriores = filtrarDados(dadosDepto, [mesAnteriorFormatado], semana_passada);
           break;
         case 'mensal':
-          dadosAtuais = filtrarDados(dadosDepto, [mesAtualFormatado], semanasAteAgora);
-          dadosAnteriores = filtrarDados(dadosDepto, [mesAnteriorFormatado], semanasAteAgora);
+          dadosAtuais = filtrarDados(dadosDepto, [mesAtualFormatado]);
+          dadosAnteriores = filtrarDados(dadosDepto, [mesAnteriorFormatado]);
           break;
         case 'trimestral':
           dadosAtuais = filtrarDados(dadosDepto, mesesTrimestreAtual);
