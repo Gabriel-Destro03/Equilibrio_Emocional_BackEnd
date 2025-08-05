@@ -30,7 +30,10 @@ Route.group('dashboard', () => {
  *         description: Unauthorized
  */
 
-    Route.get('/:uid/:type', 'Api/DashboardController.getDashboardData')
+    Route.get('dashboard/:uid/:type', 'Api/DashboardController.getDashboardData')
+    Route.get('tendencias/:uid/:type', 'Api/DashboardController.getTendencias')
+    Route.get('engajamento/:uid', 'Api/DashboardController.getEngajamento')
+
 }).prefix('/dashboard')
 
 module.exports = Route; 

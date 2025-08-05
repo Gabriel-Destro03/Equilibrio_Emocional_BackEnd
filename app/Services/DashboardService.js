@@ -10,6 +10,8 @@ class DashboardService {
   }
 
   async getDashboardData(uid, type) {
+    //return this.getEngajamento(uid)
+    //return this.getTendencias(uid, 'geral')
     try {
       let usuarioFiltro = await this.usuarioRepository.getUsuariosFiliaisDepartamento(uid);
 
@@ -50,7 +52,6 @@ class DashboardService {
   }
 
   calcularDados(data) {
-    console.log(data)
     const respondentes = data.filter(d => d.respondeu_na_semana === "sim");
     const total = data.length;
     const totalRespondentes = respondentes.length;
@@ -75,8 +76,6 @@ class DashboardService {
 
     let filtrado = data
       .filter(d => d.mes_ano_analise === mesFormatado)
-      
-      //console.log(filtrado)
 
     if(offsetMes === 0) {
       const primeiroDiaSemana = new Date(agora);
@@ -187,6 +186,145 @@ class DashboardService {
   
     return resultado;
   }
+
+  async getEngajamento(uid){
+    try {
+      let usuarioFiltro = await this.usuarioRepository.getUsuariosFiliaisDepartamento(uid);
+
+      let data = await this.repository.getDashboardData();
+      if(usuarioFiltro.id_filial){
+        data = data.filter(d => usuarioFiltro.id_filial?.includes(d.filial_id));
+      }
+      if(usuarioFiltro.id_departamento){
+        data = data.filter(d => usuarioFiltro.id_departamento?.includes(d.departamento_id));
+      }
+
+      data = data.filter(d => d.respondeu_na_semana == "sim")
+      let grupos = await this.agruparPorSemana(data);
+      return grupos;
+    } catch (error) {
+      throw new Error(error.message || 'Erro ao buscar dados do engajamento');
+    }
+
+  }
+
+  async agruparPorSemana(dados) {
+    const resultado = {};
+  
+    dados.forEach((item) => {
+      if (item.respondeu_na_semana !== 'sim') return;
+  
+      const [inicioSemana] = item.semana_texto.split(' a ');
+      const semanaChave = `Semana ${inicioSemana}`;
+      const departamento = item.nome_departamento;
+  
+      if (!resultado[semanaChave]) {
+        resultado[semanaChave] = {};
+      }
+  
+      if (!resultado[semanaChave][departamento]) {
+        resultado[semanaChave][departamento] = 0;
+      }
+  
+      resultado[semanaChave][departamento]++;
+    });
+  
+    // Transformar objetos de contagem em array de objetos { Departamento: total }
+    const resultadoFinal = {};
+  
+    for (const semana in resultado) {
+      resultadoFinal[semana] = Object.entries(resultado[semana]).map(
+        ([departamento, total]) => ({ [departamento]: total })
+      );
+    }
+  
+    return resultadoFinal;
+  }
+  
+  async getTendencias(uid, type){
+    try {
+      let usuarioFiltro = await this.usuarioRepository.getUsuariosFiliaisDepartamento(uid);
+
+      let data = await this.repository.getDashboardData();
+      if(usuarioFiltro.id_filial){
+        data = data.filter(d => usuarioFiltro.id_filial?.includes(d.filial_id));
+      }
+      if(usuarioFiltro.id_departamento){
+        data = data.filter(d => usuarioFiltro.id_departamento?.includes(d.departamento_id));
+      }
+
+      let tedencias = []
+      switch (type) {
+        case 'geral':
+          tedencias = await this.agruparPorMesEAgrupamento(data)
+          break;
+        case 'departamento':
+          tedencias = await this.agruparPorMesEAgrupamento(data, true)
+          break;
+        default:
+          break;
+      }
+
+      return tedencias;
+    } catch (error) {
+      throw new Error(error.message || 'Erro ao buscar dados das tendências');
+    }
+  }
+
+  async agruparPorMesEAgrupamento(dados, agruparPorDepartamento = false, calcularMedia = true) {
+    const resultado = {};
+  
+    dados.forEach(item => {
+      if (item.respondeu_na_semana !== 'sim') return;
+  
+      const chaveMes = item.mes_ano_analise;
+      const chaveDepartamento = agruparPorDepartamento ? item.nome_departamento : null;
+  
+      if (!resultado[chaveMes]) {
+        resultado[chaveMes] = agruparPorDepartamento ? {} : [];
+      }
+  
+      const nota = parseFloat(item.avaliar);
+      if (isNaN(nota)) return;
+  
+      if (agruparPorDepartamento) {
+        if (!resultado[chaveMes][chaveDepartamento]) {
+          resultado[chaveMes][chaveDepartamento] = [];
+        }
+  
+        resultado[chaveMes][chaveDepartamento].push(nota);
+      } else {
+        resultado[chaveMes].push(nota);
+      }
+    });
+  
+    // Calcular médias se necessário
+    if (calcularMedia) {
+      const medias = {};
+  
+      Object.entries(resultado).forEach(([mes, dadosMes]) => {
+        if (agruparPorDepartamento) {
+          medias[mes] = {};
+          Object.entries(dadosMes).forEach(([departamento, notas]) => {
+            const soma = notas.reduce((acc, val) => acc + val, 0);
+            const media = soma / notas.length;
+            medias[mes][departamento] = parseFloat(media.toFixed(2));
+          });
+        } else {
+          const soma = dadosMes.reduce((acc, val) => acc + val, 0);
+          const media = soma / dadosMes.length;
+          medias[mes] = parseFloat(media.toFixed(2));
+        }
+      });
+  
+      return medias;
+    }
+  
+    return resultado;
+  }
+  
+
+  
 }
 
 module.exports = DashboardService;
