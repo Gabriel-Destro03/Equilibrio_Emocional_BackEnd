@@ -89,13 +89,13 @@ class ClienteService {
             // 1. Verificar se o cliente já existe
             const clienteExistente = await this.repository.clienteExistsByEmail(usuario.email)
             if (clienteExistente) {
-                throw new Error('Cliente já existe')
+                throw new Error('Não foi possível cadastrar: o e-mail informado já está em uso.');
             }
 
             // 2. Verificar se a empresa já existe
             const empresaExistente = await this.repository.empresaExistsByCnpj(empresa.cnpj)
             if (empresaExistente) {
-                throw new Error('Empresa já existe')
+                throw new Error('Não foi possível cadastrar: o CNPJ informado já está em uso.');
             }
 
             // 3. Criar empresa
@@ -121,6 +121,10 @@ class ClienteService {
             // 6. Enviar e-mail de boas-vindas
             await SendEmail.sendCodigoClienteEmail(usuarioCriado.email, usuarioCriado.nome_completo, usuarioCriado.uid)
 
+
+            // 8. Adicionar as permissões do cliente
+            await this.repository.createPermissaoCliente(usuarioCriado.id, authData.user.id)
+            
             // 7. Retornar dados do cliente criado
             return {
                 id: usuarioCriado.id,
@@ -141,7 +145,7 @@ class ClienteService {
             }
 
         } catch (error) {
-            throw new Error(`Erro ao criar cliente: ${error.message}`)
+            throw new Error(`${error.message}`)
         }
     }
 

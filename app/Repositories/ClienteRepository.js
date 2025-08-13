@@ -92,10 +92,9 @@ class ClienteRepository {
                     email: usuario.email,
                     telefone: usuario.telefone,
                     cargo: usuario.cargo,
-                    status: false,
                     uid: usuario.uid,
                     empresa_id: usuario.empresa_id,
-                    status: true
+                    status: false
                 })
                 .select('*')
                 .single();
@@ -106,6 +105,29 @@ class ClienteRepository {
             throw new Error(`Erro ao criar usuário: ${error.message}`)
         }
     }
+
+    async createPermissaoCliente(usuario_id, uid) {
+        try {
+            const idsPermissoes = [1, 2, 3, 4, 5, 6];
+    
+            const permissoes = idsPermissoes.map(id => ({
+                id_user: usuario_id,
+                id_permissao: id,
+                uid
+            }));
+    
+            const { data, error } = await this.supabase
+                .from('usuario_permissoes')
+                .insert(permissoes);
+    
+            if (error) throw new Error(error.message);
+    
+            return data;
+        } catch (error) {
+            throw new Error(`Erro ao criar permissão do cliente: ${error.message}`);
+        }
+    }
+    
 }
 
 module.exports = ClienteRepository 
