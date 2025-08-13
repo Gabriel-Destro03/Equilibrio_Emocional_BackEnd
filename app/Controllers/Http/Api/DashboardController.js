@@ -23,6 +23,39 @@ class DashboardController {
             })
         }
     }
+
+    async getEngajamento({ params, response }){
+        try {
+            const uid  = params.uid;
+
+            const data = await this.service.getEngajamento(uid);
+
+            return response.status(200).json(data)
+        } catch (error) {
+            console.error('Erro no Engajamento:', error)
+            return response.status(500).json({
+                success: false,
+                message: error.message || 'Erro ao buscar dados do dashboard'
+            })
+        }
+    }
+
+    async getTendencias({ params, response }){
+        try {
+            const uid  = params.uid;
+            const type  = params.type;
+
+            const data = await this.service.getTendencias(uid, type);
+
+            return response.status(200).json(data)
+        } catch (error) {
+            console.error('Erro nas Tendências:', error)
+            return response.status(500).json({
+                success: false,
+                message: error.message || 'Erro ao buscar dados do dashboard'
+            })
+        }
+    }
 }
 
 module.exports = DashboardController;

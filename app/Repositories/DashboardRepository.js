@@ -8,7 +8,7 @@ class DashboardRepository {
     }
 
     async getDashboardData() {
-       const { data, error } = await this.supabase.rpc('get_relatorio_jornada');
+       const { data, error } = await this.supabase.rpc('get_relatorio_jornada2');
 
        if (error) {
         throw new Error(error.message || 'Erro ao buscar dados do dashboard')

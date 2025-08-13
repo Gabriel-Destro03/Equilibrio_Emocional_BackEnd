@@ -61,8 +61,6 @@ class AuthService {
             }
 
             // Authenticate with Supabase
-            const authData = await this.repository.authenticateUser(email, password)
-            
             const auth = await this.repository.signUp(email, password)
 
             if (!auth || !auth.user) {
