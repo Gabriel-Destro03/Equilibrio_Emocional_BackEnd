@@ -108,6 +108,32 @@ class UserRepository {
   }
 
   /**
+   * Find user action by token and code
+   * @param {string} token Token to search for
+   * @param {string} code Code to search for
+   * @returns {Promise<Object>} User action data
+   */
+  async findActionByCode(code) {
+    try {
+      const { data, error } = await this.supabase
+        .from('acoes_usuarios')
+        .select('*')
+        .eq('code', code)
+        .single()
+
+      if (error) {
+        console.error('Error finding user action:', error)
+        return null
+      }
+
+      return data
+    } catch (error) {
+      console.error('Error finding user action:', error)
+      return null
+    }
+  }
+
+  /**
    * Find user action by token, uid and code
    * @param {string} token Token to search for
    * @param {string} uid User ID

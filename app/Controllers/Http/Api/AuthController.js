@@ -328,6 +328,39 @@ class AuthController {
       })
     }
   }
+
+  /**
+   * Verify access code for client activation
+   * @param {object} ctx
+   * @param {Request} ctx.request
+   * @param {Response} ctx.response
+   */
+  async verifyAccessCode({ request, response }) {
+    try {
+      const { code } = request.all()
+
+      if (!code) {
+        return response.status(400).json({
+          success: false,
+          message: 'Código são obrigatórios'
+        })
+      }
+
+      const result = await this.authService.verifyAccessCode(code)
+      
+      return response.json({
+        success: true,
+        message: result.message,
+        data: result.user
+      })
+    } catch (error) {
+      console.error('Verify access code error in controller:', error)
+      return response.status(400).json({
+        success: false,
+        message: error.message || 'Código inválidos'
+      })
+    }
+  }
 }
 
 module.exports = AuthController

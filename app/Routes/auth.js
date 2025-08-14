@@ -376,4 +376,70 @@ Route.group('auth', () => {
    */
   Route.post('/active-user', 'Api/AuthController.activeUser')
 
+  /**
+   * @swagger
+   * /auth/verify-access-code:
+   *   post:
+   *     tags:
+   *       - Auth
+   *     summary: Verifica código de acesso do cliente
+   *     description: Valida o código de acesso fornecido pelo cliente e ativa o usuário se correto
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             required:
+   *               - code
+   *             properties:
+   *               code:
+   *                 type: string
+   *                 description: Código de acesso do cliente
+   *     responses:
+   *       200:
+   *         description: Código verificado com sucesso e usuário ativado
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   example: true
+   *                 message:
+   *                   type: string
+   *                   example: Código verificado com sucesso! Seu usuário foi ativado.
+   *                 data:
+   *                   type: object
+   *                   description: Dados do usuário ativado
+   *       400:
+   *         description: Token ou código inválidos
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   example: false
+   *                 message:
+   *                   type: string
+   *                   example: Token ou código inválidos
+   *       500:
+   *         description: Erro interno do servidor
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   example: false
+   *                 message:
+   *                   type: string
+   *                   example: Erro ao verificar código de acesso
+   */
+  Route.post('/verify-access-code', 'Api/AuthController.verifyAccessCode')
+
 }).prefix('/auth')

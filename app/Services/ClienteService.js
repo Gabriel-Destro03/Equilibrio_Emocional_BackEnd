@@ -124,7 +124,7 @@ class ClienteService {
             // 7. Preparar dados do código de acesso com token
             const TokenService = require('./tokens/TokenService')
             const codigoAcessoData = {
-                uid: usuarioCriado.id,
+                uid: authData.user.id,
                 type: 'codigo_acesso',
                 code: codigoAcesso,
                 status: true,

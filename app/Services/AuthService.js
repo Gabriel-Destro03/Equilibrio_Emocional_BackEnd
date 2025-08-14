@@ -530,6 +530,72 @@ class AuthService {
             throw new Error(error.message || 'Erro ao definir senha')
         }
     }
+
+    /**
+     * Verify access code for client activation
+     * @param {string} code Code to validate
+     * @returns {Promise<Object>} Verification result
+     */
+    async verifyAccessCode(code) {
+        try {
+            // Validar dados de entrada
+            if (!code) {
+                throw new Error('Código são obrigatórios')
+            }
+
+            // Buscar ação do usuário pelo código
+            const action = await this.userRepository.findActionByCode(code)
+            
+            if (!action) {
+                throw new Error('Código inválidos')
+            }
+
+            // Verificar se é um código de acesso
+            if (action.type !== 'codigo_acesso') {
+                throw new Error('Tipo de código inválido')
+            }
+
+            // Verificar se o token está expirado
+            const now = new Date()
+            const expiraEm = new Date(action.expira_em)
+            
+            if (now > expiraEm) {
+                throw new Error('Código expirado')
+            }
+
+            // Verificar se o status está ativo
+            if (!action.status) {
+                throw new Error('Código já utilizado')
+            }
+
+            // Buscar usuário pelo UID
+            const user = await this.usuarioRepository.getUsuarioByUid(action.uid)
+            
+            if (!user) {
+                throw new Error('Usuário não encontrado')
+            }
+
+            // Ativar o usuário
+            await this.usuarioRepository.updateUsuarioUId(user.id, user.uid)
+
+            // Atualizar o status da ação para usado
+            await this.userRepository.updateActionStatus(action.id, false)
+
+            return { 
+                success: true,
+                message: 'Código verificado com sucesso! Seu usuário foi ativado.',
+                user: {
+                    id: user.id,
+                    nome: user.nome_completo,
+                    email: user.email,
+                    status: true
+                }
+            }
+        } catch (error) {
+            console.error('Error verifying access code:', error)
+            throw new Error(error.message || 'Erro ao verificar código de acesso')
+        }
+    }
 }
 
 module.exports = { AuthService }
