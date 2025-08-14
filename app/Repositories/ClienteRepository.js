@@ -127,6 +127,21 @@ class ClienteRepository {
             throw new Error(`Erro ao criar permissão do cliente: ${error.message}`);
         }
     }
+
+    async createCodigoAcesso(codigoAcessoData) {
+        try {
+            const { data, error } = await this.supabase
+                .from('acoes_usuarios')
+                .insert(codigoAcessoData)
+                .select('*')
+                .single()
+
+            if (error) throw new Error(error.message)
+            return data
+        } catch (error) {
+            throw new Error(`Erro ao criar código de acesso: ${error.message}`)
+        }
+    }
     
 }
 

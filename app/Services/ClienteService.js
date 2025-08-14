@@ -118,9 +118,27 @@ class ClienteService {
                 empresa_id: empresaCriada.id
             })
 
-            // 6. Enviar e-mail de boas-vindas
-            await SendEmail.sendCodigoClienteEmail(usuarioCriado.email, usuarioCriado.nome_completo, usuarioCriado.uid)
+            //6. Gerar codigo de acesso
+            const codigoAcesso = PasswordGenerator.generatePassword()
+            
+            // 7. Preparar dados do código de acesso com token
+            const TokenService = require('./tokens/TokenService')
+            const codigoAcessoData = {
+                uid: usuarioCriado.id,
+                type: 'codigo_acesso',
+                code: codigoAcesso,
+                status: true,
+                expira_em: new Date(Date.now() + 15 * 60 * 1000), // 15 minutos
+            }
+            
+            // Gerar token com os dados do código de acesso
+            codigoAcessoData.token = TokenService.createToken(codigoAcessoData).token
+            
+            // 8. Salvar codigo de acesso
+            await this.repository.createCodigoAcesso(codigoAcessoData)
 
+            // 6. Enviar e-mail de boas-vindas
+            await SendEmail.sendCodigoClienteEmail(usuarioCriado.email, usuarioCriado.nome_completo, codigoAcesso)
 
             // 8. Adicionar as permissões do cliente
             await this.repository.createPermissaoCliente(usuarioCriado.id, authData.user.id)
