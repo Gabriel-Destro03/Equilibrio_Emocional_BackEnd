@@ -118,6 +118,12 @@ class ClienteService {
                 empresa_id: empresaCriada.id
             })
 
+            await this.repository.criarRepresentante([{
+                usuario_id: usuarioCriado.id,
+                usuario_uid: authData.user.id,
+                empresa_id: empresaCriada.id
+            }]);
+
             //6. Gerar codigo de acesso
             const codigoAcesso = PasswordGenerator.generatePassword()
             

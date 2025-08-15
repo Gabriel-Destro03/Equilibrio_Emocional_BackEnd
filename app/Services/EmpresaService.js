@@ -140,7 +140,10 @@ class EmpresaService {
                 site: empresaData.site
             });
 
+            // Atualização de representantes
+
             const representantes = await this.repository.buscarRepresentantes(empresa.id) || []
+
             const representantesInput = empresaData.responsaveis || []
 
             // IDs dos representantes atuais
@@ -158,16 +161,21 @@ class EmpresaService {
 
             // Para adicionar: quem está nos novos mas não está nos atuais
             const representantesAdicionar = representantesInput
-              .filter(rep => !idsAtuais.includes(rep.id))
+              .filter(rep => !idsAtuais.includes(rep.iusuario_idd))
               .map(rep => ({
                 usuario_id: rep.id,
+                usuario_uid: rep.uid,
                 empresa_id: empresa.id
               }))
+              
+            if(representantesRemover.length > 0){
+                await this.repository.removerRepresentante(representantesRemover)
+            }
+            if(representantesAdicionar.length > 0){
+                await this.repository.criarRepresentante(representantesAdicionar)
+            }
 
-            await this.repository.removerRepresentante(representantesRemover)
-            await this.repository.criarRepresentante(representantesAdicionar)
-
-            return 
+            return empresa
         } catch (error) {
             throw new Error(`Erro ao atualizar empresa: ${error.message}`)
         }

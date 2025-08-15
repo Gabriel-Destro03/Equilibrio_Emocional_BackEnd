@@ -108,7 +108,7 @@ class ClienteRepository {
 
     async createPermissaoCliente(usuario_id, uid) {
         try {
-            const idsPermissoes = [1, 2, 3, 4, 5, 6];
+            const idsPermissoes = [1, 2, 3, 4, 5, 6, 9];
     
             const permissoes = idsPermissoes.map(id => ({
                 id_user: usuario_id,
