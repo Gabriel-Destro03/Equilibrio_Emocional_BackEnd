@@ -32,9 +32,9 @@ class FilialService {
     }
 
     async createFilial(filialData) {
-        const { nome_filial, cnpj, endereco } = filialData
+        const { nome_filial, cnpj, endereco, empresa_id} = filialData
 
-        if (!nome_filial || !cnpj || !endereco) {
+        if (!nome_filial || !cnpj || !endereco || !empresa_id) {
             throw new Error('Todos os campos são obrigatórios')
         }
 
@@ -46,7 +46,8 @@ class FilialService {
             return await this.repository.createFilial({
                 nome_filial,
                 cnpj,
-                endereco
+                endereco,
+                empresa_id
             })
         } catch (error) {
             throw new Error(`Erro ao criar filial: ${error.message}`)

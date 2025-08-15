@@ -36,7 +36,7 @@ class FilialController {
      */
     async store({ request, response }) {
         try {
-            const filialData = request.only(['nome_filial', 'cnpj', 'endereco'])
+            const filialData = request.only(['nome_filial', 'cnpj', 'endereco', 'empresa_id'])
             const filial = await this.service.createFilial(filialData)
             return response.status(201).json(filial)
         } catch (error) {

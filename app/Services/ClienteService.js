@@ -3,6 +3,7 @@
 const ClienteRepository = require('../Repositories/ClienteRepository')
 const UsuarioService = require('./UsuarioService')
 const EmpresaService = require('./EmpresaService')
+const EmpresaRepository = require('../Repositories/EmpresaRepository')
 const SendEmail = require('./Emails/SendEmail')
 const PasswordGenerator = require('../Utils/PasswordGenerator')
 const crypto = require('crypto')
@@ -13,6 +14,7 @@ const crypto = require('crypto')
 class ClienteService {
     constructor() {
         this.repository = new ClienteRepository()
+        this.empresaRepository = new EmpresaRepository()
         this.usuarioService = new UsuarioService()
         this.empresaService = new EmpresaService()
     }
@@ -118,7 +120,7 @@ class ClienteService {
                 empresa_id: empresaCriada.id
             })
 
-            await this.repository.criarRepresentante([{
+            await this.empresaRepository.criarRepresentante([{
                 usuario_id: usuarioCriado.id,
                 usuario_uid: authData.user.id,
                 empresa_id: empresaCriada.id
