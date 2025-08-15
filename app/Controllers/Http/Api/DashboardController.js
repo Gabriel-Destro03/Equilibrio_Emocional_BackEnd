@@ -7,12 +7,11 @@ class DashboardController {
         this.service = new DashboardService();
     }
 
-    async getDashboardData({ params, response }) {
+    async getDashboardData({ request, response }) {
         try {
-            const uid  = params.uid;
-            const type  = params.type;
+            const dashboardData = request.only(['uid', 'type', 'filialId', 'empresaId'])
 
-            const data = await this.service.getDashboardData(uid, type);
+            const data = await this.service.getDashboardData(dashboardData);
 
             return response.status(200).json(data)
         } catch (error) {
@@ -24,11 +23,11 @@ class DashboardController {
         }
     }
 
-    async getEngajamento({ params, response }){
+    async getEngajamento({ request, response }){
         try {
-            const uid  = params.uid;
+            const dashboardData = request.only(['uid', 'type', 'filialId', 'empresaId'])
 
-            const data = await this.service.getEngajamento(uid);
+            const data = await this.service.getEngajamento(dashboardData);
 
             return response.status(200).json(data)
         } catch (error) {
@@ -40,12 +39,11 @@ class DashboardController {
         }
     }
 
-    async getTendencias({ params, response }){
+    async getTendencias({ request, response }){
         try {
-            const uid  = params.uid;
-            const type  = params.type;
+            const dashboardData = request.only(['uid', 'type', 'filialId', 'empresaId'])
 
-            const data = await this.service.getTendencias(uid, type);
+            const data = await this.service.getTendencias(dashboardData);
 
             return response.status(200).json(data)
         } catch (error) {

@@ -35,6 +35,7 @@ class FilialRepository {
             .from('filiais')
             .select('*')
             .eq('empresa_id', empresaId)
+            .order('created_at', { ascending: true });
         if (error) throw new Error(error.message)
         return data
     }

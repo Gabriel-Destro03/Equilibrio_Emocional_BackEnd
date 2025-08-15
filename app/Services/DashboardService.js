@@ -2,33 +2,62 @@
 
 const DashboardRepository = require('../Repositories/DashboardRepository');
 const UsuarioRepository = require('../Repositories/UsuarioRepository');
+const FilialRepository = require('../Repositories/FilialRepository');
+const EmpresaRepository = require('../Repositories/EmpresaRepository');
 
 class DashboardService {
   constructor() {
     this.repository = new DashboardRepository();
     this.usuarioRepository = new UsuarioRepository();
+    this.filialRepository = new FilialRepository();
+    this.empresaRepository = new EmpresaRepository();
   }
 
-  async getDashboardData(uid, type) {
-    //return this.getEngajamento(uid)
-    //return this.getTendencias(uid, 'geral')
+  async getDashboardData({ uid, type, filialId, empresaId }) {
     try {
-      let usuarioFiltro = await this.usuarioRepository.getUsuariosFiliaisDepartamento(uid);
-
+      // 1. Buscar usuário e validar empresa
+      const usuario = await this.usuarioRepository.getUsuarioByUid(uid);
+      if (usuario.empresa_id !== empresaId) {
+        throw new Error('Usuário não pertence à empresa informada.');
+      }
+  
+      // 2. Buscar representantes da empresa e verificar se é representante
+      const representantesEmpresa = await this.empresaRepository.buscarRepresentantes(empresaId);
+      const isRepresentante = representantesEmpresa.some(re => re.usuario_uid === uid);
+  
+      // 3. Buscar filiais da empresa e validar filial informada
+      const filiais = await this.filialRepository.getFiliaisByEmpresaId(empresaId);
+      const filialValida = filiais.filter(f => f.id == filialId);
+      if (!filialValida) {
+        throw new Error('Filial não pertence à empresa informada.');
+      }
+  
+      // 4. Buscar filtros do usuário
+      const usuarioFiltro = await this.usuarioRepository.getUsuariosFiliaisDepartamento(uid);
+  
+      // 5. Buscar dados do dashboard
       let data = await this.repository.getDashboardData();
-      if(usuarioFiltro.id_filial){
-        data = data.filter(d => usuarioFiltro.id_filial?.includes(d.filial_id));
-      }
-      if(usuarioFiltro.id_departamento){
-        data = data.filter(d => usuarioFiltro.id_departamento?.includes(d.departamento_id));
+  
+      // 6. Aplicar filtros de acesso
+      if (isRepresentante) {
+        data = data.filter(d => d.filial_id == filialId);
+      } else {
+        if (usuarioFiltro.id_filial?.length) {
+          data = data.filter(d => usuarioFiltro.id_filial.includes(d.filial_id));
+        }
+        if (usuarioFiltro.id_departamento?.length) {
+          data = data.filter(d => usuarioFiltro.id_departamento.includes(d.departamento_id));
+        }
       }
 
+      // 7. Calcular métricas (executa em paralelo)
       const [mediaAtual, mediaMesAnterior, mediaDepartamento] = await Promise.all([
         this.calcularMedia(data, 0),
         this.calcularMedia(data, -1),
         this.mediaDepartamentos(data, type)
       ]);
-
+  
+      // 8. Montar retorno
       const mediaGeral = {
         media_geral: mediaAtual.mediaNota,
         media_anterior: mediaMesAnterior.mediaNota,
@@ -37,15 +66,14 @@ class DashboardService {
         percentual_resposta_anterior: mediaMesAnterior.engajamento,
         variacao_percentual_resposta: (mediaAtual.engajamento - mediaMesAnterior.engajamento).toFixed(2),
       };
-
-      return {
-        mediaGeral,
-        mediaDepartamento
-      };
+  
+      return { mediaGeral, mediaDepartamento };
+  
     } catch (error) {
       throw new Error(error.message || 'Erro ao buscar dados do dashboard');
     }
   }
+  
 
   formatarMesAno(date) {
     return `${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()}`;
@@ -187,16 +215,37 @@ class DashboardService {
     return resultado;
   }
 
-  async getEngajamento(uid){
+  async getEngajamento({ uid, type, filialId, empresaId }){
     try {
+      // 1. Buscar usuário e validar empresa
+      const usuario = await this.usuarioRepository.getUsuarioByUid(uid);
+      if (usuario.empresa_id !== empresaId) {
+        throw new Error('Usuário não pertence à empresa informada.');
+      }
+
+      // 2. Buscar representantes da empresa e verificar se é representante
+      const representantesEmpresa = await this.empresaRepository.buscarRepresentantes(empresaId);
+      const isRepresentante = representantesEmpresa.some(re => re.usuario_uid === uid);
+
+      // 3. Buscar filiais da empresa e validar filial informada
+      const filiais = await this.filialRepository.getFiliaisByEmpresaId(empresaId);
+      const filialValida = filiais.filter(f => f.id == filialId);
+      if (!filialValida) {
+        throw new Error('Filial não pertence à empresa informada.');
+      }
+
       let usuarioFiltro = await this.usuarioRepository.getUsuariosFiliaisDepartamento(uid);
 
       let data = await this.repository.getDashboardData();
-      if(usuarioFiltro.id_filial){
-        data = data.filter(d => usuarioFiltro.id_filial?.includes(d.filial_id));
-      }
-      if(usuarioFiltro.id_departamento){
-        data = data.filter(d => usuarioFiltro.id_departamento?.includes(d.departamento_id));
+      if (isRepresentante) {
+        data = data.filter(d => d.filial_id == filialId);
+      } else {
+        if (usuarioFiltro.id_filial?.length) {
+          data = data.filter(d => usuarioFiltro.id_filial.includes(d.filial_id));
+        }
+        if (usuarioFiltro.id_departamento?.length) {
+          data = data.filter(d => usuarioFiltro.id_departamento.includes(d.departamento_id));
+        }
       }
 
       data = data.filter(d => d.respondeu_na_semana == "sim")
@@ -241,16 +290,37 @@ class DashboardService {
     return resultadoFinal;
   }
   
-  async getTendencias(uid, type){
+  async getTendencias({ uid, type, filialId, empresaId }){
     try {
+      // 1. Buscar usuário e validar empresa
+      const usuario = await this.usuarioRepository.getUsuarioByUid(uid);
+      if (usuario.empresa_id !== empresaId) {
+        throw new Error('Usuário não pertence à empresa informada.');
+      }
+
+      // 2. Buscar representantes da empresa e verificar se é representante
+      const representantesEmpresa = await this.empresaRepository.buscarRepresentantes(empresaId);
+      const isRepresentante = representantesEmpresa.some(re => re.usuario_uid === uid);
+
+      // 3. Buscar filiais da empresa e validar filial informada
+      const filiais = await this.filialRepository.getFiliaisByEmpresaId(empresaId);
+      const filialValida = filiais.filter(f => f.id == filialId);
+      if (!filialValida) {
+        throw new Error('Filial não pertence à empresa informada.');
+      }
+
       let usuarioFiltro = await this.usuarioRepository.getUsuariosFiliaisDepartamento(uid);
 
       let data = await this.repository.getDashboardData();
-      if(usuarioFiltro.id_filial){
-        data = data.filter(d => usuarioFiltro.id_filial?.includes(d.filial_id));
-      }
-      if(usuarioFiltro.id_departamento){
-        data = data.filter(d => usuarioFiltro.id_departamento?.includes(d.departamento_id));
+      if (isRepresentante) {
+        data = data.filter(d => d.filial_id == filialId);
+      } else {
+        if (usuarioFiltro.id_filial?.length) {
+          data = data.filter(d => usuarioFiltro.id_filial.includes(d.filial_id));
+        }
+        if (usuarioFiltro.id_departamento?.length) {
+          data = data.filter(d => usuarioFiltro.id_departamento.includes(d.departamento_id));
+        }
       }
 
       let tedencias = []

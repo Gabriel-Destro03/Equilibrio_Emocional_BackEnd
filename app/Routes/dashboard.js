@@ -30,9 +30,9 @@ Route.group('dashboard', () => {
  *         description: Unauthorized
  */
 
-    Route.get('dashboard/:uid/:type', 'Api/DashboardController.getDashboardData')
-    Route.get('tendencias/:uid/:type', 'Api/DashboardController.getTendencias')
-    Route.get('engajamento/:uid', 'Api/DashboardController.getEngajamento')
+    Route.post('dashboard', 'Api/DashboardController.getDashboardData')
+    Route.post('tendencias', 'Api/DashboardController.getTendencias')
+    Route.post('engajamento', 'Api/DashboardController.getEngajamento')
 
 }).prefix('/dashboard')
 
