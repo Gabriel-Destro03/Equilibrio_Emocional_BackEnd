@@ -94,16 +94,135 @@ class UsuarioRepository {
         return data
     }
 
-    async getUsuarioByEmpresaId(empresa_id) {
+    /**
+     * 🔹 Busca usuários por empresa_id
+     */
+    async getUsuariosByEmpresaId(empresa_id) {
+        const usuariosComFilial = await this._buscarUsuariosComFiliais(empresa_id)
+        const filiaisIds = this._extrairFiliaisIds(usuariosComFilial)
+        const departamentos = await this._buscarDepartamentos(filiaisIds)
+        const departamentosMap = this._mapearDepartamentos(departamentos)
+
+        const usuariosFormatados = this._formatarUsuarios(usuariosComFilial, departamentosMap)
+
+        return this._removerDuplicados(usuariosFormatados)
+    }
+
+    /**
+     * 🔹 Query principal: usuarios + filiais
+     */
+    async _buscarUsuariosComFiliais(empresa_id) {
         const { data, error } = await this.supabase
-            .from('usuarios')
-            .select('*')
-            .eq('empresa_id', empresa_id)
-            .order('id', { ascending: false })
+            .from('usuario_filial')
+            .select(`
+                usuario:usuarios(
+                    id,
+                    empresa_id,
+                    uid,
+                    nome_completo,
+                    cargo,
+                    email,
+                    telefone,
+                    created_at,
+                    status
+                ),
+                filial:filiais(
+                    id,
+                    nome_filial,
+                    empresa_id
+                )
+            `)
+            .eq('usuario.empresa_id', empresa_id)
+            .order('created_at', { ascending: false })
 
         if (error) throw new Error(error.message)
+
+        return data.filter(item => item.usuario?.empresa_id === empresa_id)
+    }
+
+    /**
+     * 🔹 Query departamentos por filiais
+     */
+    async _buscarDepartamentos(filiaisIds) {
+        if (!filiaisIds.length) return []
+
+        const { data, error } = await this.supabase
+            .from('usuario_departamento')
+            .select(`
+                usuario:usuarios!inner (
+                    id,
+                    uid
+                ),
+                departamento:departamentos (
+                    id,
+                    id_filial,
+                    nome_departamento
+                )
+            `)
+            .in('departamentos.id_filial', filiaisIds)
+
+        if (error) throw new Error(error.message)
+
         return data
     }
+
+    /**
+     * 🔹 Extrai IDs únicos de filiais
+     */
+    _extrairFiliaisIds(data) {
+        return [...new Set(data.map(item => item.filial.id))]
+    }
+
+    /**
+     * 🔹 Cria um map { usuarioId/uid -> departamento }
+     */
+    _mapearDepartamentos(departamentos) {
+        const map = new Map()
+        departamentos.forEach(item => {
+            if (item.departamento) {
+                const key = item.usuario.uid || item.usuario.id
+                map.set(key, {
+                    nome: item.departamento.nome_departamento,
+                    id: item.departamento.id
+                })
+            }
+        })
+        return map
+    }
+
+    /**
+     * 🔹 Formata os dados finais
+     */
+    _formatarUsuarios(data, departamentosMap) {
+        return data.map(item => {
+            const usuario = item.usuario
+            const filial = item.filial
+            const departamentoInfo = departamentosMap.get(usuario.uid || usuario.id)
+
+            return {
+                id: usuario.id,
+                uid: usuario.uid,
+                nome_completo: usuario.nome_completo,
+                cargo: usuario.cargo,
+                email: usuario.email,
+                telefone: usuario.telefone,
+                status: usuario.status,
+                created_at: usuario.created_at,
+                nome_filial: filial.nome_filial,
+                id_filial: filial.id,
+                departamento: departamentoInfo?.nome || null,
+                id_departamento: departamentoInfo?.id || null
+            }
+        })
+    }
+
+    /**
+     * 🔹 Remove duplicados por uid/id
+     */
+    _removerDuplicados(usuarios) {
+        return [...new Map(usuarios.map(item => [item.uid || item.id, item])).values()]
+    }
+    
 
     async getUsuarioByUid(uid) {
         const { data, error } = await this.supabase
@@ -220,8 +339,29 @@ class UsuarioRepository {
         }
     }
 
+    /**
+     * Atualiza usuário + relacionamentos (filial, departamento, etc.)
+     */
     async updateUsuario(id, usuarioData) {
-        // Atualiza o usuário
+        const usuario = await this._atualizarUsuarioBase(id, usuarioData)
+
+        // 🔹 Executa relacionamentos em paralelo
+        await Promise.all([
+            this._upsertRelacionamento('usuario_filial', id, {
+                id_filial: usuarioData.id_filial,
+            }),
+            this._upsertRelacionamento('usuario_departamento', id, {
+                id_departamento: usuarioData.id_departamento,
+            }),
+        ])
+
+        return usuario
+    }
+
+    /**
+     * 🔹 Atualiza dados básicos do usuário
+     */
+    async _atualizarUsuarioBase(id, usuarioData) {
         const { data, error } = await this.supabase
             .from('usuarios')
             .update({
@@ -232,33 +372,50 @@ class UsuarioRepository {
             })
             .eq('id', id)
             .select()
-            .single();
-    
-        if (error) throw new Error(`Erro ao atualizar usuário: ${error.message}`);
-    
-        // Executa atualizações em paralelo (filial e departamento)
-        const [filialResult, departamentoResult] = await Promise.all([
-            supabase
-                .from('usuario_filial')
-                .update({ id_filial: usuarioData.id_filial })
-                .eq('id_usuario', id),
-    
-            supabase
-                .from('usuario_departamento')
-                .update({ id_departamento: usuarioData.id_departamento })
-                .eq('id_usuario', id)
-        ]);
-    
-        // Verifica erros nas atualizações paralelas
-        if (filialResult.error) {
-            throw new Error(`Erro ao atualizar filial: ${filialResult.error.message}`);
+            .single()
+
+        if (error) {
+            throw new Error(`Erro ao atualizar usuário: ${error.message}`)
         }
-    
-        if (departamentoResult.error) {
-            throw new Error(`Erro ao atualizar departamento: ${departamentoResult.error.message}`);
+
+        return data
+    }
+
+    /**
+     * 🔹 Upsert genérico (filial, departamento, etc.)
+     */
+    async _upsertRelacionamento(tabela, id_usuario, valores) {
+        // Verifica se já existe
+        const { data: existente, error: selectError } = await this.supabase
+            .from(tabela)
+            .select('id')
+            .eq('id_usuario', id_usuario)
+            .maybeSingle()
+
+        if (selectError) {
+            throw new Error(`Erro ao verificar ${tabela}: ${selectError.message}`)
         }
-    
-        return data;
+
+        if (existente) {
+            // Update
+            const { error: updateError } = await this.supabase
+                .from(tabela)
+                .update(valores)
+                .eq('id_usuario', id_usuario)
+
+            if (updateError) {
+                throw new Error(`Erro ao atualizar ${tabela}: ${updateError.message}`)
+            }
+        } else {
+            // Insert
+            const { error: insertError } = await this.supabase
+                .from(tabela)
+                .insert({ id_usuario, ...valores })
+
+            if (insertError) {
+                throw new Error(`Erro ao inserir em ${tabela}: ${insertError.message}`)
+            }
+        }
     }
 
     async updateUsuarioUId(id, uid) {

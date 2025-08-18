@@ -24,8 +24,8 @@ class UsuarioFilialRepository {
             .from('usuario_filial')
             .select('*')
             .eq('id_usuario', idUsuario)
-            .eq('id_filial', idFilial)
-            .single()
+            // .eq('id_filial', idFilial)
+            .maybeSingle()
 
         if (error && error.code !== 'PGRST116') { // PGRST116 means no rows found
             console.error('Erro ao buscar usuario_filial por usuario e filial:', error.message)
@@ -45,9 +45,26 @@ class UsuarioFilialRepository {
             .from('usuario_filial')
             .select(`
                 *,\
+                usuarios(nome_completo, empresa_id)\
+            `)
+
+        const dataFiltrado = data.filter(d => d.usuarios != null && (d.usuarios?.empresa_id == idFilial))
+
+        if (error) {
+            console.error('Erro ao buscar representantes por filial:', error.message)
+            throw new Error(`Erro ao buscar representantes por filial: ${error.message}`)
+        }
+        return dataFiltrado
+    }
+
+    async getRepresentantesByEmpresaId(idEmpresa) {
+        const { data, error } = await this.supabase
+            .from('usuario_filial')
+            .select(`
+                *,\
                 usuarios(nome_completo)\
             `)
-            .eq('id_filial', idFilial)
+            .eq('usuarios.empresa_id', idEmpresa)
 
         if (error) {
             console.error('Erro ao buscar representantes por filial:', error.message)

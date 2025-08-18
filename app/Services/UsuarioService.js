@@ -75,7 +75,7 @@ class UsuarioService {
         }
 
         try {
-            const usuarios = await this.repository.getUsuarioByEmpresaId(empresa_id)
+            const usuarios = await this.repository.getUsuariosByEmpresaId(empresa_id)
             return usuarios;
         } catch (error) {
           throw new Error(`Erro ao buscar usuários: ${error.message}`)  
@@ -225,7 +225,7 @@ class UsuarioService {
             throw new Error('ID do usuário é obrigatório')
         }
 
-        const { nome_completo, email, telefone, cargo } = usuarioData
+        const { nome_completo, email, telefone, cargo, id_filial, id_departamento } = usuarioData
 
         if (!nome_completo && !email && !telefone && !cargo) {
             throw new Error('Pelo menos um campo deve ser fornecido para atualização')

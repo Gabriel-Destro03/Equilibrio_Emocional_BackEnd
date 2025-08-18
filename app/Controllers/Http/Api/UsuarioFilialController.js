@@ -64,6 +64,20 @@ class UsuarioFilialController {
         }
     }
 
+    async getRepresentantesByEmpresaId({ params, response }){
+        try {
+            const { idFilial } = params
+            if (!idFilial) {
+                return response.status(400).json({ error: 'ID da filial é obrigatório nos parâmetros' })
+            }
+            const representantes = await this.service.getRepresentantesByEmpresaId(idFilial)
+            return response.status(200).json(representantes)
+        } catch (error) {
+            console.error('Erro no controller ao buscar usuario_filial:', error.message)
+            return response.status(400).json({ error: error.message })
+        }
+    }
+
     /**
      * @swagger
      * /api/usuario-filial:

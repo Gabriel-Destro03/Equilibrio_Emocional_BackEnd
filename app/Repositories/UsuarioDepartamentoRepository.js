@@ -45,15 +45,16 @@ class UsuarioDepartamentoRepository {
             .from('usuario_departamento')
             .select(`
                 *,
-                usuarios(nome_completo)
+                usuarios(nome_completo, empresa_id)
             `)
-            .eq('id_departamento', idDepartamento)
+        
+            const dataFiltrado = data.filter(d => d.usuarios != null && (d.usuarios?.empresa_id == idDepartamento))
 
         if (error) {
             console.error('Erro ao buscar representantes por departamento:', error.message)
             throw new Error(`Erro ao buscar representantes por departamento: ${error.message}`)
         }
-        return data
+        return dataFiltrado
     }
 
     async create(usuarioDepartamentoData) {
