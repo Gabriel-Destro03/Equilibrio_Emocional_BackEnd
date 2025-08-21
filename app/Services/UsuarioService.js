@@ -4,6 +4,11 @@ const UsuarioRepository = require('../Repositories/UsuarioRepository')
 const AuthRepository = require('../Repositories/AuthRepository')
 
 const UserRepository = require('../Repositories/UserRepository')
+
+const FiliaisRepository = require('../Repositories/FilialRepository')
+const DepartamentoRepository = require('../Repositories/DepartamentoRepository')
+const UsuarioDepartamentoRepository = require('../Repositories/UsuarioDepartamentoRepository')
+
 const PasswordGenerator = require('../Utils/PasswordGenerator')
 const SendEmail = require('../Services/Emails/SendEmail')
 const TokenService = require('./tokens/TokenService')
@@ -16,6 +21,11 @@ class UsuarioService {
     constructor() {
         this.repository = new UsuarioRepository()
         this.usuarioRepository = new UserRepository()
+
+        this.filiaisRepository = new FiliaisRepository()
+        this.departamentoRepository = new DepartamentoRepository()
+
+        this.usuarioDepartamentoRepository = new UsuarioDepartamentoRepository();
     }
 
     /**
@@ -75,8 +85,49 @@ class UsuarioService {
         }
 
         try {
-            const usuarios = await this.repository.getUsuariosByEmpresaId(empresa_id)
-            return usuarios;
+            // 1. BUSCAR USUARIOS
+            const usuarios = await this.repository.getUsuariosByEmpresaId(empresa_id);
+            const usuariosIds = usuarios.map(u => u.id)
+            // 2. BUSCAR USUARIOS_FILIAIS
+            const usuarios_filias = await this.repository.getUsuariosFiliais(usuariosIds)
+            // 3. BUSCAR FILIAIS
+            const filiais = await this.filiaisRepository.getFiliaisByEmpresaId(empresa_id);
+            const filiaisIds = filiais.map(f => f.id);
+
+            // 4. BUSCAR DEPARTAMENTOS
+            const departamentos = await this.departamentoRepository.getDepartamentosByFiliaisId(filiaisIds);
+            const usuarios_departamentos = await this.usuarioDepartamentoRepository.getUsersByIds(usuariosIds)
+
+
+            // 5. FORMATAR OBJETOS DE RESULTADO
+            const usuariosFormatados = usuarios.map(item => {
+                const usuarioRelacionamentoFilial = usuarios_filias?.filter(uf => uf?.id_usuario == item.id && uf.status === true)
+                .sort((a, b) => new Date(a.created_at) - new Date(b.created_at))[0];
+                const usuarioRelacionamentoDepartamento = usuarios_departamentos?.filter(ud => ud?.id_usuario == item.id && ud.status === true)
+                .sort((a, b) => new Date(a.created_at) - new Date(b.created_at))[0];
+
+                const filial = filiais?.filter(f => f.id == usuarioRelacionamentoFilial?.id_filial)[0];
+
+                const departamento = departamentos
+                    ?.filter(d => d.id == usuarioRelacionamentoDepartamento?.id_departamento)[0]
+
+                return {
+                    id: item.id,
+                    uid: item.uid,
+                    nome_completo: item.nome_completo,
+                    cargo: item.cargo,
+                    email: item.email,
+                    telefone: item.telefone,
+                    status: item.status,
+                    created_at: item.created_at,
+                    nome_filial: filial?.nome_filial || null,
+                    id_filial: filial?.id || null,
+                    departamento: departamento?.nome_departamento || null,
+                    id_departamento: departamento?.id || null
+                }
+            })
+            
+            return usuariosFormatados;
         } catch (error) {
           throw new Error(`Erro ao buscar usuários: ${error.message}`)  
         }

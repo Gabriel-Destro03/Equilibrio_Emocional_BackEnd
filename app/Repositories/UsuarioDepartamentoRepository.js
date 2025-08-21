@@ -19,6 +19,19 @@ class UsuarioDepartamentoRepository {
         return data
     }
 
+    async getUsersByIds(ids) {
+        const { data, error } = await this.supabase
+            .from('usuario_departamento')
+            .select('*')
+            .in('id_usuario', ids);
+
+        if (error) {
+            console.error('Erro ao buscar todos usuario_departamento:', error.message)
+            throw new Error(`Erro ao buscar todos usuario_departamento: ${error.message}`)
+        }
+        return data
+    }
+
     async getByUsuarioAndDepartamento(idUsuario, idDepartamento) {
         const { data, error } = await this.supabase
             .from('usuario_departamento')
