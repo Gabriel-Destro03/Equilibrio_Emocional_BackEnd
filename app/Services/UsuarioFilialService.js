@@ -20,7 +20,7 @@ class UsuarioFilialService {
         const { id_usuario, id_filial, is_representante } = usuarioFilialData
 
         if (!id_usuario || !id_filial) {
-            throw new Error('id_usuario e id_filial são obrigatórios')
+            await this.updateUsuarioFilial(id_usuario, id_filial, is_representante)
         }
 
         // Check if already exists
@@ -57,7 +57,11 @@ class UsuarioFilialService {
          // Check if the relationship exists before attempting to update
          const existing = await this.repository.getByUsuarioAndFilial(idUsuario, idFilial)
          if (!existing) {
-              throw new Error('Associação usuario_filial não encontrada')
+            return await this.repository.create({
+                id_usuario: idUsuario,
+                id_filial: idFilial,
+                is_representante: true
+            })
          }
 
          // We only allow updating is_representante for now based on requirements
@@ -67,7 +71,7 @@ class UsuarioFilialService {
          }
 
          try {
-            return await this.repository.updateUsuarioFilial(idUsuario, idFilial, { is_representante: updateData.is_representante })
+            return await this.repository.updateUsuarioFilial(idUsuario, idFilial, {is_representante: updateData })
          } catch (error) {
             console.error('Erro ao atualizar usuario_filial no service:', error.message)
             throw new Error(`Erro ao atualizar usuario_filial: ${error.message}`)

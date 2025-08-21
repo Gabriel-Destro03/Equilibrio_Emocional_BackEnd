@@ -336,7 +336,6 @@ class UsuarioRepository {
     async updateUsuario(id, usuarioData) {
         const usuario = await this._atualizarUsuarioBase(id, usuarioData)
 
-        console.log(usuarioData)
         // 🔹 Executa relacionamentos em paralelo
         await Promise.all([
             this._upsertRelacionamento('usuario_filial', id, {
@@ -346,7 +345,6 @@ class UsuarioRepository {
                 id_departamento: usuarioData.id_departamento,
             }),
         ])
-        console.log('Fim')
         return usuario
     }
 
@@ -389,7 +387,6 @@ class UsuarioRepository {
         }
 
         if (existente) {
-            console.log('Existe')
             // Update
             const { error: updateError } = await this.supabase
                 .from(tabela)
@@ -400,7 +397,6 @@ class UsuarioRepository {
                 throw new Error(`Erro ao atualizar ${tabela}: ${updateError.message}`)
             }
         } else {
-            console.log('Não Existe')
             // Insert
             const { error: insertError } = await this.supabase
                 .from(tabela)

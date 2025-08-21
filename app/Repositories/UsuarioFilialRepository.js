@@ -42,19 +42,18 @@ class UsuarioFilialRepository {
 
     async getRepresentantesByFilialId(idFilial) {
         const { data, error } = await this.supabase
-            .from('usuario_filial')
-            .select(`
-                *,\
-                usuarios(nome_completo, empresa_id)\
+            .from('usuarios')
+            .select(`*,
+                usuario_filial(id_usuario, id_filial, is_representante)    
             `)
-
-        const dataFiltrado = data.filter(d => d.usuarios != null && (d.usuarios?.empresa_id == idFilial))
+            .eq('empresa_id', idFilial)
+        //const dataFiltrado = data.filter(d => d.usuarios != null && (d.usuarios?.empresa_id == idFilial))
 
         if (error) {
             console.error('Erro ao buscar representantes por filial:', error.message)
             throw new Error(`Erro ao buscar representantes por filial: ${error.message}`)
         }
-        return dataFiltrado
+        return data
     }
 
     async getRepresentantesByEmpresaId(idEmpresa) {
