@@ -55,19 +55,24 @@ class UsuarioDepartamentoRepository {
 
     async getRepresentantesByDepartamentoId(idDepartamento) {
         const { data, error } = await this.supabase
-            .from('usuario_departamento')
-            .select(`
-                *,
-                usuarios(nome_completo, empresa_id)
+            .from('usuarios')
+            .select(`*,
+                usuario_departamento(id_usuario, id_departamento, is_representante)
             `)
+            .eq('empresa_id', idDepartamento)
+        // .from('usuario_departamento')
+            // .select(`
+            //     *,
+            //     usuarios(nome_completo, empresa_id)
+            // `)
         
-            const dataFiltrado = data.filter(d => d.usuarios != null && (d.usuarios?.empresa_id == idDepartamento))
+            // const dataFiltrado = data.filter(d => d.usuarios != null && (d.usuarios?.empresa_id == idDepartamento))
 
         if (error) {
             console.error('Erro ao buscar representantes por departamento:', error.message)
             throw new Error(`Erro ao buscar representantes por departamento: ${error.message}`)
         }
-        return dataFiltrado
+        return data
     }
 
     async create(usuarioDepartamentoData) {

@@ -1,6 +1,6 @@
 'use strict'
 
-const UsuarioDepartamentoRepository = use('App/Repositories/UsuarioDepartamentoRepository')
+const UsuarioDepartamentoRepository = require('../Repositories/UsuarioDepartamentoRepository')
 
 class UsuarioDepartamentoService {
     constructor() {
@@ -26,7 +26,7 @@ class UsuarioDepartamentoService {
         // Check if already exists
         const existing = await this.repository.getByUsuarioAndDepartamento(id_usuario, id_departamento)
         if (existing) {
-            throw new Error('Este usuário já está associado a este departamento.')
+            await this.updateUsuarioDepartamento(id_usuario, id_departamento, is_representante)
         }
 
         try {
@@ -53,11 +53,15 @@ class UsuarioDepartamentoService {
         }
     }
 
-    async updateUsuarioDepartamento(idUsuario, idDepartamento, updateData) {
+    async updateUsuarioDepartamento(id_usuario, id_departamento, is_representante) {
          // Check if the relationship exists before attempting to update
-         const existing = await this.repository.getByUsuarioAndDepartamento(idUsuario, idDepartamento)
+         const existing = await this.repository.getByUsuarioAndDepartamento(id_usuario, id_departamento)
          if (!existing) {
-              throw new Error('Associação usuario_departamento não encontrada')
+            return await this.repository.create({
+                id_usuario,
+                id_departamento,
+                is_representante: true // Default to false if not provided
+            })
          }
 
          // We only allow updating is_representante for now based on requirements
@@ -67,7 +71,7 @@ class UsuarioDepartamentoService {
          }
 
          try {
-            return await this.repository.updateUsuarioDepartamento(idUsuario, idDepartamento, { is_representante: updateData.is_representante })
+            return await this.repository.updateUsuarioDepartamento(id_usuario, id_departamento, is_representante)
          } catch (error) {
             console.error('Erro ao atualizar usuario_departamento no service:', error.message)
             throw new Error(`Erro ao atualizar usuario_departamento: ${error.message}`)

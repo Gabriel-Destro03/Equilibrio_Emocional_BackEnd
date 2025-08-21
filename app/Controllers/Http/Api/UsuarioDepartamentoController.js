@@ -1,6 +1,6 @@
 'use strict'
 
-const UsuarioDepartamentoService = use('App/Services/UsuarioDepartamentoService')
+const UsuarioDepartamentoService = require('../../../Services/UsuarioDepartamentoService')
 
 class UsuarioDepartamentoController {
     constructor() {
