@@ -24,7 +24,7 @@ class UsuarioFilialRepository {
             .from('usuario_filial')
             .select('*')
             .eq('id_usuario', idUsuario)
-            // .eq('id_filial', idFilial)
+            .eq('id_filial', idFilial)
             .maybeSingle()
 
         if (error && error.code !== 'PGRST116') { // PGRST116 means no rows found
