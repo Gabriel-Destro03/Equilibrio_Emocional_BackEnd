@@ -54,28 +54,22 @@ class UsuarioDepartamentoService {
     }
 
     async updateUsuarioDepartamento(id_usuario, id_departamento, is_representante) {
-         // Check if the relationship exists before attempting to update
-         const existing = await this.repository.getByUsuarioAndDepartamento(id_usuario, id_departamento)
-         if (!existing) {
+        // Check if the relationship exists before attempting to update
+        const existing = await this.repository.getByUsuarioAndDepartamento(id_usuario, id_departamento)
+        if (!existing) {
             return await this.repository.create({
                 id_usuario,
                 id_departamento,
                 is_representante: true // Default to false if not provided
             })
-         }
+        }
 
-         // We only allow updating is_representante for now based on requirements
-         // Validate updateData has the expected structure/fields
-         if (updateData.is_representante === undefined) {
-             throw new Error('Campo is_representante é obrigatório para atualização')
-         }
-
-         try {
-            return await this.repository.updateUsuarioDepartamento(id_usuario, id_departamento, is_representante)
-         } catch (error) {
+        try {
+            return await this.repository.updateUsuarioDepartamento(id_usuario, id_departamento, {is_representante: !existing.is_representante})
+        } catch (error) {
             console.error('Erro ao atualizar usuario_departamento no service:', error.message)
             throw new Error(`Erro ao atualizar usuario_departamento: ${error.message}`)
-         }
+        }
     }
 
     async deleteUsuarioDepartamento(idUsuario, idDepartamento) {

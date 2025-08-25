@@ -71,7 +71,7 @@ class UsuarioFilialService {
          }
 
          try {
-            return await this.repository.updateUsuarioFilial(idUsuario, idFilial, {is_representante: updateData })
+            return await this.repository.updateUsuarioFilial(idUsuario, idFilial, updateData)
          } catch (error) {
             console.error('Erro ao atualizar usuario_filial no service:', error.message)
             throw new Error(`Erro ao atualizar usuario_filial: ${error.message}`)
