@@ -132,8 +132,9 @@ class UsuarioDepartamentoRepository {
 
             // Se estiver adicionando como representante
             if (updateData.is_representante === true) {
-                // Adiciona as permissões 3, 4 e 5
+                // Adiciona as permissões 1, 4 e 6
                 const permissoesParaAdicionar = [
+                    { id_user: idUsuario, id_permissao: 1, uid },
                     { id_user: idUsuario, id_permissao: 4, uid },
                     { id_user: idUsuario, id_permissao: 6, uid }
                 ]

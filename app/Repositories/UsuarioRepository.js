@@ -106,18 +106,7 @@ class UsuarioRepository {
             .order('created_at', { ascending: false })
 
         if (error) throw new Error(error.message)
-        
-            return data
-
-
-        // const usuariosComFilial = await this._buscarUsuariosComFiliais(empresa_id)
-        // const filiaisIds = this._extrairFiliaisIds(usuariosComFilial)
-        // const departamentos = await this._buscarDepartamentos(filiaisIds)
-        // const departamentosMap = this._mapearDepartamentos(departamentos)
-
-        // const usuariosFormatados = this._formatarUsuarios(usuariosComFilial, departamentosMap)
-
-        // return this._removerDuplicados(usuariosFormatados)
+        return data
     }
 
     async getUsuariosFiliais(ids){
@@ -130,90 +119,6 @@ class UsuarioRepository {
         if (error) throw new Error(error.message)
         return data
     }
-
-    /**
-     * 🔹 Query departamentos por filiais
-     */
-    async _buscarDepartamentos(filiaisIds) {
-        if (!filiaisIds.length) return []
-
-        const { data, error } = await this.supabase
-            .from('usuario_departamento')
-            .select(`
-                usuario:usuarios!inner (
-                    id,
-                    uid
-                ),
-                departamento:departamentos (
-                    id,
-                    id_filial,
-                    nome_departamento
-                )
-            `)
-            .in('departamentos.id_filial', filiaisIds)
-
-        if (error) throw new Error(error.message)
-
-        return data
-    }
-
-    /**
-     * 🔹 Extrai IDs únicos de filiais
-     */
-    _extrairFiliaisIds(data) {
-        return [...new Set(data.map(item => item.filial.id))]
-    }
-
-    /**
-     * 🔹 Cria um map { usuarioId/uid -> departamento }
-     */
-    _mapearDepartamentos(departamentos) {
-        const map = new Map()
-        departamentos.forEach(item => {
-            if (item.departamento) {
-                const key = item.usuario.uid || item.usuario.id
-                map.set(key, {
-                    nome: item.departamento.nome_departamento,
-                    id: item.departamento.id
-                })
-            }
-        })
-        return map
-    }
-
-    /**
-     * 🔹 Formata os dados finais
-     */
-    _formatarUsuarios(data, departamentosMap) {
-        return data.map(item => {
-            const usuario = item.usuario
-            const filial = item.filial
-            const departamentoInfo = departamentosMap.get(usuario.uid || usuario.id)
-
-            return {
-                id: usuario.id,
-                uid: usuario.uid,
-                nome_completo: usuario.nome_completo,
-                cargo: usuario.cargo,
-                email: usuario.email,
-                telefone: usuario.telefone,
-                status: usuario.status,
-                created_at: usuario.created_at,
-                nome_filial: filial.nome_filial,
-                id_filial: filial.id,
-                departamento: departamentoInfo?.nome || null,
-                id_departamento: departamentoInfo?.id || null
-            }
-        })
-    }
-
-    /**
-     * 🔹 Remove duplicados por uid/id
-     */
-    _removerDuplicados(usuarios) {
-        return [...new Map(usuarios.map(item => [item.uid || item.id, item])).values()]
-    }
-    
 
     async getUsuarioByUid(uid) {
         const { data, error } = await this.supabase
@@ -336,12 +241,13 @@ class UsuarioRepository {
     async updateUsuario(id, usuarioData) {
         const usuario = await this._atualizarUsuarioBase(id, usuarioData)
 
+        
         // 🔹 Executa relacionamentos em paralelo
         await Promise.all([
-            this._upsertRelacionamento('usuario_filial', id, {
+            await this._upsertRelacionamento('usuario_filial', id, {
                 id_filial: usuarioData.id_filial,
             }),
-            this._upsertRelacionamento('usuario_departamento', id, {
+            await this._upsertRelacionamento('usuario_departamento', id, {
                 id_departamento: usuarioData.id_departamento,
             }),
         ])
@@ -378,14 +284,14 @@ class UsuarioRepository {
         // Verifica se já existe
         const { data: existente, error: selectError } = await this.supabase
             .from(tabela)
-            .select('id')
+            .select('*')
             .eq('id_usuario', id_usuario)
-            .maybeSingle()
+            .order('id', { ascending: true })
+            .limit(1)
 
         if (selectError) {
             throw new Error(`Erro ao verificar ${tabela}: ${selectError.message}`)
         }
-
         if (existente) {
             // Update
             const { error: updateError } = await this.supabase
