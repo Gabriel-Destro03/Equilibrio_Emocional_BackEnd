@@ -152,7 +152,7 @@ class UsuarioDepartamentoRepository {
                     .from('usuario_permissoes')
                     .delete()
                     .eq('id_user', idUsuario)
-                    .in('id_permissao', [4, 6])
+                    .in('id_permissao', [1, 4, 6])
 
                 if (deleteError) throw new Error(`Erro ao remover permissões: ${deleteError.message}`)
             }
