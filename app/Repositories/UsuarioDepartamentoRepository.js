@@ -25,7 +25,7 @@ class UsuarioDepartamentoRepository {
             .select('*')
             .eq('id_usuario', idUsuario)
             .eq('id_departamento', idDepartamento)
-        console.log('data', data)
+
         if (error && error.code !== 'PGRST116') { // PGRST116 means no rows found
             console.error('Erro ao buscar usuario_departamento por usuario e departamento:', error.message)
             throw new Error(`Erro ao buscar usuario_departamento: ${error.message}`)
@@ -39,22 +39,55 @@ class UsuarioDepartamentoRepository {
         return data
     }
 
-    async getRepresentantesByDepartamentoId(idDepartamento) {
+    async getDepartamentoById(idDepartamento) {
         const { data, error } = await this.supabase
-            .from('usuario_departamento')
-            .select(`
-                *,
-                usuarios(nome_completo)
-            `)
-            .eq('id_departamento', idDepartamento)
-
+            .from('departamentos')
+            .select(`id, id_filial`)
+            .eq('id', idDepartamento)
+            .single()
+    
         if (error) {
-            console.error('Erro ao buscar representantes por departamento:', error.message)
-            throw new Error(`Erro ao buscar representantes por departamento: ${error.message}`)
+            throw new Error(`Erro ao buscar departamento: ${error.message}`)
         }
         return data
     }
 
+    async getUsuariosByFilialId(idFilial) {
+        const { data, error } = await this.supabase
+            .from('usuario_filial')
+            .select(`
+                id,
+                id_usuario,
+                id_filial,
+                created_at,
+                status,
+                usuarios ( nome_completo )
+            `)
+            .eq('id_filial', idFilial)
+    
+        if (error) {
+            throw new Error(`Erro ao buscar usuários da filial: ${error.message}`)
+        }
+        return data
+    }
+
+    async getUsuariosByDepartamentoId(idDepartamento) {
+        const { data, error } = await this.supabase
+            .from('usuario_departamento')
+            .select(`
+                id,
+                id_usuario,
+                id_departamento,
+                is_representante
+            `)
+            .eq('id_departamento', idDepartamento)
+    
+        if (error) {
+            throw new Error(`Erro ao buscar usuários do departamento: ${error.message}`)
+        }
+        return data
+    }
+    
     async create(usuarioDepartamentoData) {
         const { data, error } = await this.supabase
             .from('usuario_departamento')
@@ -76,13 +109,19 @@ class UsuarioDepartamentoRepository {
             .eq('id_usuario', idUsuario)
             .eq('id_departamento', idDepartamento)
             .select()
-            .single()
 
         if (error) {
             console.error('Erro ao atualizar usuario_departamento:', error.message)
             throw new Error(`Erro ao atualizar usuario_departamento: ${error.message}`)
         }
-        return data
+
+        // Verifica se encontrou registros para atualizar
+        if (!data || data.length === 0) {
+            throw new Error('Nenhum registro encontrado para atualização')
+        }
+
+        // Retorna o primeiro registro atualizado
+        return data[0]
     }
 
     // Helper: verificar se o usuário é representante em algum departamento
