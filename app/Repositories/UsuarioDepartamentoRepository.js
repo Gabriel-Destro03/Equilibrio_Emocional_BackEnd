@@ -25,8 +25,7 @@ class UsuarioDepartamentoRepository {
             .select('*')
             .eq('id_usuario', idUsuario)
             .eq('id_departamento', idDepartamento)
-            .single()
-
+        console.log('data', data)
         if (error && error.code !== 'PGRST116') { // PGRST116 means no rows found
             console.error('Erro ao buscar usuario_departamento por usuario e departamento:', error.message)
             throw new Error(`Erro ao buscar usuario_departamento: ${error.message}`)
@@ -86,61 +85,35 @@ class UsuarioDepartamentoRepository {
         return data
     }
 
-    async updateUsuarioDepartamento(idUsuario, idDepartamento, updateData) {
-        try {
-            // Primeiro, busca o uid do usuário
-            const { data: usuarioData, error: usuarioError } = await this.supabase
-                .from('usuarios')
-                .select('uid')
-                .eq('id', idUsuario)
-                .single()
+    // Helper: verificar se o usuário é representante em algum departamento
+    async userHasAnyDepartamentoRepresentante(idUsuario) {
+        const { data, error } = await this.supabase
+            .from('usuario_departamento')
+            .select('id')
+            .eq('id_usuario', idUsuario)
+            .eq('is_representante', true)
+            .limit(1)
 
-            if (usuarioError) throw new Error(usuarioError.message)
-            if (!usuarioData) throw new Error('Usuário não encontrado')
-
-            const uid = usuarioData.uid
-
-            // Atualiza o status de representante
-            const { data, error } = await this.supabase
-                .from('usuario_departamento')
-                .update(updateData)
-                .eq('id_usuario', idUsuario)
-                .eq('id_departamento', idDepartamento)
-                .select()
-                .single()
-
-            if (error) throw new Error(error.message)
-
-            // Se estiver adicionando como representante
-            if (updateData.is_representante === true) {
-                // Adiciona as permissões 3, 4 e 5
-                const permissoesParaAdicionar = [
-                    { id_user: idUsuario, id_permissao: 4, uid },
-                    { id_user: idUsuario, id_permissao: 6, uid }
-                ]
-
-                const { error: insertError } = await this.supabase
-                    .from('usuario_permissoes')
-                    .insert(permissoesParaAdicionar)
-
-                if (insertError) throw new Error(`Erro ao adicionar permissões: ${insertError.message}`)
-            } 
-            // Se estiver removendo como representante
-            else if (updateData.is_representante === false) {
-                // Remove as permissões 3, 4 e 5
-                const { error: deleteError } = await this.supabase
-                    .from('usuario_permissoes')
-                    .delete()
-                    .eq('id_user', idUsuario)
-                    .in('id_permissao', [4, 6])
-
-                if (deleteError) throw new Error(`Erro ao remover permissões: ${deleteError.message}`)
-            }
-
-            return data
-        } catch (error) {
-            throw new Error(`Erro ao atualizar usuário departamento: ${error.message}`)
+        if (error) {
+            console.error('Erro ao verificar representante em departamento:', error.message)
+            throw new Error(`Erro ao verificar representante em departamento: ${error.message}`)
         }
+        return Array.isArray(data) && data.length > 0
+    }
+
+    // Helper: remover permissões específicas do usuário
+    async removeUserPermissions(idUsuario, permissionIds) {
+        const { error } = await this.supabase
+            .from('usuario_permissoes')
+            .delete()
+            .eq('id_user', idUsuario)
+            .in('id_permissao', permissionIds)
+
+        if (error) {
+            console.error('Erro ao remover permissões do usuário:', error.message)
+            throw new Error(`Erro ao remover permissões do usuário: ${error.message}`)
+        }
+        return { removed: permissionIds }
     }
 
     async delete(idUsuario, idDepartamento) {
