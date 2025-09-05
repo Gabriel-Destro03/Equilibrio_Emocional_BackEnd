@@ -223,12 +223,12 @@ class UsuarioRepository {
     
         // Executa atualizações em paralelo (filial e departamento)
         const [filialResult, departamentoResult] = await Promise.all([
-            supabase
+            this.supabase
                 .from('usuario_filial')
                 .update({ id_filial: usuarioData.id_filial })
                 .eq('id_usuario', id),
     
-            supabase
+            this.supabase
                 .from('usuario_departamento')
                 .update({ id_departamento: usuarioData.id_departamento })
                 .eq('id_usuario', id)
