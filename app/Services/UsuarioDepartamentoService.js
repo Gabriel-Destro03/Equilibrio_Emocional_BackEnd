@@ -1,10 +1,12 @@
 'use strict'
 
 const UsuarioDepartamentoRepository = require('../Repositories/UsuarioDepartamentoRepository')
+const PermissaoService = require('./PermissaoService')
 
 class UsuarioDepartamentoService {
     constructor() {
         this.repository = new UsuarioDepartamentoRepository()
+        this.permissaoService = new PermissaoService()
     }
 
     async getAllUsuarioDepartamentos() {
@@ -54,18 +56,32 @@ class UsuarioDepartamentoService {
     }
 
     async updateUsuarioDepartamento(id_usuario, id_departamento, is_representante) {
-        // Check if the relationship exists before attempting to update
-        const existing = await this.repository.getByUsuarioAndDepartamento(id_usuario, id_departamento)
-        if (!existing) {
-            return await this.repository.create({
-                id_usuario,
-                id_departamento,
-                is_representante: true // Default to false if not provided
-            })
-        }
-
         try {
-            return await this.repository.updateUsuarioDepartamento(id_usuario, id_departamento, {is_representante: !existing.is_representante})
+            // Check if the relationship exists before attempting to update
+            const existing = await this.repository.getByUsuarioAndDepartamento(id_usuario, id_departamento)
+            if (!existing) {
+                return await this.repository.create({
+                    id_usuario,
+                    id_departamento,
+                    is_representante: is_representante || false
+                })
+            }
+
+            // Atualiza o status de representante no banco
+            const result = await this.repository.update(id_usuario, id_departamento, { is_representante })
+
+            // Gerenciar permissões baseado no novo status
+            if (is_representante === true) {
+                // Buscar UID do usuário
+                const usuarioData = await this.repository.getUserUid(id_usuario)
+                // Adicionar permissões de representante de departamento
+                await this.permissaoService.addRepresentativePermissions(id_usuario, usuarioData.uid, 'rep_departamento')
+            } else if (is_representante === false) {
+                // Remover permissões de representante de departamento
+                await this.permissaoService.managePermissionsAfterRepresentativeRemoval(id_usuario, 'rep_departamento')
+            }
+
+            return result
         } catch (error) {
             console.error('Erro ao atualizar usuario_departamento no service:', error.message)
             throw new Error(`Erro ao atualizar usuario_departamento: ${error.message}`)

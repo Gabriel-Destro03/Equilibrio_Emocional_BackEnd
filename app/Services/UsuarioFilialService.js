@@ -1,10 +1,12 @@
 'use strict'
 
 const UsuarioFilialRepository = require('../Repositories/UsuarioFilialRepository')
+const PermissaoService = require('./PermissaoService')
 
 class UsuarioFilialService {
     constructor() {
         this.repository = new UsuarioFilialRepository()
+        this.permissaoService = new PermissaoService()
     }
 
     async getAllUsuarioFiliais() {
@@ -71,7 +73,18 @@ class UsuarioFilialService {
          }
 
          try {
-            return await this.repository.updateUsuarioFilial(idUsuario, idFilial, updateData)
+            const result = await this.repository.update(idUsuario, idFilial, updateData)
+            
+            // Gerenciar permissões após atualização
+            if (updateData.is_representante === true) {
+                // Buscar o uid do usuário para gerenciar permissões
+                const usuarioData = await this.repository.getUserUid(idUsuario)
+                await this.permissaoService.addRepresentativePermissions(idUsuario, usuarioData.uid, 'rep_filial')
+            } else if (updateData.is_representante === false) {
+                await this.permissaoService.managePermissionsAfterRepresentativeRemoval(idUsuario, 'rep_filial')
+            }
+            
+            return result
          } catch (error) {
             console.error('Erro ao atualizar usuario_filial no service:', error.message)
             throw new Error(`Erro ao atualizar usuario_filial: ${error.message}`)

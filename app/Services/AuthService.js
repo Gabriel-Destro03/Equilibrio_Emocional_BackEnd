@@ -2,6 +2,7 @@
 
 const { AuthRepository } = require('../Repositories/AuthRepository')
 const UsuarioRepository = require('../Repositories/UsuarioRepository')
+const PermissaoService = require('./PermissaoService')
 const TokenService = require('./tokens/TokenService')
 const UserRepository = require('../Repositories/UserRepository')
 const SendEmail = require('./Emails/SendEmail')
@@ -13,6 +14,7 @@ class AuthService {
         this.repository = new AuthRepository()
         this.userRepository = new UserRepository()
         this.usuarioRepository = new UsuarioRepository()
+        this.permissaoService = new PermissaoService()
     }
 
     /**
@@ -30,7 +32,7 @@ class AuthService {
             const usuario = await this.repository.getUserData(authData.user.id)
             
             // Get user permissions
-            const userPerm = await this.repository.getUserPermissions(authData.user.id)
+            const userPerm = await this.permissaoService.getUserPermissions(authData.user.id)
 
             // Format filiais data
             const filiaisFormatadas = this.formatFiliaisData(usuario.filiais)

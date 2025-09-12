@@ -3,12 +3,14 @@
 const EmpresaRepository = require('../Repositories/EmpresaRepository')
 const FilialRepository = require('../Repositories/FilialRepository')
 const DepartamentoRepository = require('../Repositories/DepartamentoRepository')
+const PermissaoService = require('./PermissaoService')
 
 class EmpresaService {
     constructor() {
         this.repository = new EmpresaRepository()
         this.filialRepository = new FilialRepository()
         this.departamentoRepository = new DepartamentoRepository()
+        this.permissaoService = new PermissaoService()
     }
 
     async getAllEmpresas() {
@@ -145,12 +147,13 @@ class EmpresaService {
             const representantes = await this.repository.buscarRepresentantes(empresa.id) || []
 
             const representantesInput = empresaData.responsaveis || []
+            
 
             // IDs dos representantes atuais
             const idsAtuais = representantes.map(r => r.usuario_id)
             // IDs dos representantes enviados na requisição
-            const idsNovos = representantesInput.map(rep => rep.usuario_id)
-
+            const idsNovos = representantesInput.map(rep => rep.id)
+            
             // Para remover: quem está nos atuais mas não está nos novos
             const representantesRemover = representantes
               .filter(r => !idsNovos.includes(r.usuario_id))
@@ -158,21 +161,34 @@ class EmpresaService {
                 usuario_id: r.usuario_id,
                 empresa_id: empresa.id
               }))
-
+              
             // Para adicionar: quem está nos novos mas não está nos atuais
             const representantesAdicionar = representantesInput
-              .filter(rep => !idsAtuais.includes(rep.iusuario_idd))
-              .map(rep => ({
-                usuario_id: rep.id,
-                usuario_uid: rep.uid,
-                empresa_id: empresa.id
-              }))
+              .filter(rep => !idsAtuais.includes(rep.id))
+              .map(rep => {
+                console.log(`[DEBUG] Representante para adicionar:`, rep)
+                return {
+                  usuario_id: rep.id,
+                  usuario_uid: rep.uid,
+                  empresa_id: empresa.id
+                }
+              })
+            
               
             if(representantesRemover.length > 0){
                 await this.repository.removerRepresentante(representantesRemover)
+                // Gerenciar permissões após remoção
+                for (const rep of representantesRemover) {
+                    await this.permissaoService.managePermissionsAfterRepresentativeRemoval(rep.usuario_id, 'rep_empresa')
+                }
             }
             if(representantesAdicionar.length > 0){
                 await this.repository.criarRepresentante(representantesAdicionar)
+                // Gerenciar permissões após adição
+                for (const rep of representantesAdicionar) {
+                    console.log(`[DEBUG] Adicionando permissões para usuário ${rep.usuario_id} com uid ${rep.usuario_uid}`)
+                    await this.permissaoService.addRepresentativePermissions(rep.usuario_id, rep.usuario_uid, 'rep_empresa')
+                }
             }
 
             return empresa
