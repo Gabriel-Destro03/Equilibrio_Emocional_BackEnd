@@ -335,7 +335,16 @@ class AuthService {
             const expiraEm = new Date(action.expira_em)
             
             if (now > expiraEm) {
-                throw new Error('Token expirado')
+                await this.userRepository.updateActionStatus(action.id, false)
+
+                // Chamar a função de reenvio de email de ativação
+                const result = await this.resendActivationEmail(action.uid)
+                
+                if (!result.success) {
+                    throw new Error('Token inválido ou expirado. Erro ao enviar novo link de acesso.')
+                }
+
+                throw new Error('Token inválido ou expirado. Um novo link de acesso foi enviado para o seu e-mail.')
             }
 
             // Verificar se o status está ativo
@@ -446,6 +455,69 @@ class AuthService {
             }
 
             throw new Error(error.message || 'Erro ao atualizar senha')
+        }
+    }
+
+    /**
+     * Resend activation email for user
+     * @param {string} uid User ID
+     * @returns {Promise<Object>} Resend result
+     */
+    async resendActivationEmail(uid) {
+        try {
+            // Validar dados de entrada
+            if (!uid) {
+                throw new Error('UID do usuário é obrigatório')
+            }
+
+            // Buscar usuário pelo UID
+            const user = await this.usuarioRepository.getUsuarioByUid(uid)
+            if (!user) {
+                throw new Error('Usuário não encontrado')
+            }
+
+            // Gerar código único para ativar a conta
+            const code = crypto.randomBytes(4).toString('hex').toUpperCase()
+
+            const body = {
+                uid: uid,
+                type: "email_activation",
+                code: code,
+                status: true,
+                expira_em: new Date(Date.now() + 9 * 24 * 60 * 60 * 1000), // 9 Dias
+            }
+
+            // Gerar token com os dados do body
+            body.token = TokenService.createToken(body).token
+            const resetLink = `${process.env.VITE_URL_FRONT}/codigo?token=${body.token}`
+
+            // Salvar na tabela acoes_usuarios
+            await this.userRepository.saveUserAction({
+                uid: uid,
+                type: 'email_activation',
+                code: code,
+                status: true,
+                expira_em: new Date(Date.now() + 9 * 24 * 60 * 60 * 1000),
+                token: body.token
+            })
+
+            // Envia email de boas-vindas com a senha
+            const resultEmail = await SendEmail.sendWelcomeEmail(user.email, resetLink, code)
+            
+            // Verificar se o email foi enviado com sucesso
+            if (!resultEmail.success) {
+                console.error('Erro ao enviar email:', resultEmail.error)
+                throw new Error('Erro ao enviar email de ativação')
+            }
+
+            return {
+                success: true,
+                message: 'Email de ativação reenviado com sucesso',
+                email: user.email
+            }
+        } catch (error) {
+            console.error('Error resending activation email:', error)
+            throw new Error(error.message || 'Erro ao reenviar email de ativação')
         }
     }
 

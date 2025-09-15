@@ -376,4 +376,88 @@ Route.group('auth', () => {
    */
   Route.post('/active-user', 'Api/AuthController.activeUser')
 
+  /**
+   * @swagger
+   * /auth/resend-activation-email:
+   *   post:
+   *     operationId: auth-resend-activation-email
+   *     tags:
+   *       - Auth
+   *     summary: Resend activation email for user
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             properties:
+   *               uid:
+   *                 type: string
+   *                 required: true
+   *                 description: User UID
+   *     responses:
+   *       200:
+   *         description: Email sent successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   example: true
+   *                 data:
+   *                   type: object
+   *                   properties:
+   *                     success:
+   *                       type: boolean
+   *                       example: true
+   *                     message:
+   *                       type: string
+   *                       example: Email de ativação reenviado com sucesso
+   *                     email:
+   *                       type: string
+   *                       example: user@example.com
+   *       400:
+   *         description: Bad request
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   example: false
+   *                 message:
+   *                   type: string
+   *                   example: UID do usuário é obrigatório
+   *       404:
+   *         description: Usuário não encontrado
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   example: false
+   *                 message:
+   *                   type: string
+   *                   example: Usuário não encontrado
+   *       500:
+   *         description: Erro interno do servidor
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   example: false
+   *                 message:
+   *                   type: string
+   *                   example: Erro ao reenviar email de ativação
+   */
+  Route.post('/resend-activation-email', 'Api/AuthController.resendActivationEmail')
+
 }).prefix('/auth')
