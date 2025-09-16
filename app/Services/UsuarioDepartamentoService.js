@@ -47,8 +47,37 @@ class UsuarioDepartamentoService {
         if (!idDepartamento) {
             throw new Error('ID do departamento é obrigatório')
         }
+        
         try {
-            return await this.repository.getRepresentantesByDepartamentoId(idDepartamento)
+            // 1. Busca o departamento
+            const departamento = await this.repository.getDepartamentoById(idDepartamento)
+            
+            // 2. Busca todos os usuários da filial
+            const usuariosFilial = await this.repository.getUsuariosByFilialId(departamento.id_filial)
+            
+            // 3. Busca todos os usuários do departamento
+            const usuariosDepartamento = await this.repository.getUsuariosByDepartamentoId(departamento.id)
+            
+            // 4. Cria um map para verificar rapidamente se o usuário é representante
+            const representantesMap = new Map(
+                usuariosDepartamento.map(u => [u.id_usuario, u])
+            )
+            
+            // 5. Monta retorno no formato desejado (regra de negócio)
+            const usuarios = usuariosFilial.map(u => {
+                const representante = representantesMap.get(u.id_usuario)
+                return {
+                    id: representante?.id || u.id,
+                    id_usuario: u.id_usuario,
+                    id_departamento: representante?.id_departamento || departamento.id,
+                    created_at: u.created_at,
+                    status: u.status,
+                    is_representante: representante?.is_representante || false,
+                    usuarios: u.usuarios
+                }
+            })
+            
+            return usuarios
         } catch (error) {
             console.error('Erro ao buscar representantes por departamento no service:', error.message)
             throw new Error(`Erro ao buscar representantes por departamento: ${error.message}`)

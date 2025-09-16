@@ -130,6 +130,22 @@ class UsuarioFilialRepository {
         }
         return data
     }
+
+    // Helper: verificar se o usuário é representante em alguma filial
+    async userHasAnyFilialRepresentante(idUsuario) {
+        const { data, error } = await this.supabase
+            .from('usuario_filial')
+            .select('id')
+            .eq('id_usuario', idUsuario)
+            .eq('is_representante', true)
+            .limit(1)
+
+        if (error) {
+            console.error('Erro ao verificar representante em filial:', error.message)
+            throw new Error(`Erro ao verificar representante em filial: ${error.message}`)
+        }
+        return Array.isArray(data) && data.length > 0
+    }
 }
 
 module.exports = UsuarioFilialRepository 

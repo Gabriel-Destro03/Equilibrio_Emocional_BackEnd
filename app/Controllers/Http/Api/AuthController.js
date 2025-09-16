@@ -361,6 +361,39 @@ class AuthController {
       })
     }
   }
+
+  /**
+   * Resend activation email
+   * @param {object} ctx
+   * @param {Request} ctx.request
+   * @param {Response} ctx.response
+   */
+  async resendActivationEmail({ request, response }) {
+    try {
+      const { uid } = request.all()
+      
+      // Validate required fields
+      if (!uid) {
+        return response.status(400).json({
+          success: false,
+          message: 'UID do usuário é obrigatório'
+        })
+      }
+
+      const result = await this.authService.resendActivationEmail(uid)
+      
+      return response.json({
+        success: true,
+        data: result
+      })
+    } catch (error) {
+      console.error('Resend activation email error in controller:', error)
+      return response.status(500).json({
+        success: false,
+        message: error.message || 'Erro ao reenviar email de ativação'
+      })
+    }
+  }
 }
 
 module.exports = AuthController

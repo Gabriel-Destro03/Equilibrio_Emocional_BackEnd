@@ -169,7 +169,7 @@ class UsuarioService {
         const { nome_completo, email, telefone, cargo, id_filial, id_departamento, empresa_id } = usuarioData
 
 
-        if (!nome_completo || !email || !telefone || !cargo) {
+        if (!nome_completo || !email || !cargo) {
             throw new Error('Todos os campos são obrigatórios')
         }
 
@@ -181,7 +181,8 @@ class UsuarioService {
 
         // Validação básica de telefone (aceita apenas números)
         const telefoneRegex = /^\d+$/
-        if (!telefoneRegex.test(telefone)) {
+
+        if ((telefone != null && telefone != "") && !telefoneRegex.test(telefone)) {
             throw new Error('Telefone deve conter apenas números')
         }
 
@@ -194,13 +195,7 @@ class UsuarioService {
 
             // Gera uma senha aleatória
             const password = PasswordGenerator.generatePassword()
-            
-            // // Cria o usuário no sistema de autenticação
-            // const authUser = await this.authService.signUp(email, password)
 
-            // if (!authUser || !authUser.user || !authUser.user.id) {
-            //     throw new Error('Erro ao criar usuário no sistema de autenticação')
-            // }
 
             // Cria o usuário no banco de dados
             const usuario = await this.repository.createUsuario({
@@ -222,7 +217,7 @@ class UsuarioService {
                 type: "email_activation",
                 code: code,
                 status: true,
-                expira_em: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 horas
+                expira_em: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
             }
 
             // Gerar token com os dados do body
@@ -235,14 +230,14 @@ class UsuarioService {
                 type: 'email_activation',
                 code: code,
                 status: true,
-                expira_em: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 horas
+                expira_em: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
                 token: body.token
             })
 
-
             try {
                 // Envia email de boas-vindas com a senha
-                await SendEmail.sendWelcomeEmail(email, resetLink, code)
+                const resultEmail = await SendEmail.sendWelcomeEmail(email, resetLink, code)
+                
             } catch (emailError) {
                 console.error('Erro ao enviar email de boas-vindas:', emailError)
                 // Não interrompe o fluxo se o email falhar
