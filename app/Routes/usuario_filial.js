@@ -162,4 +162,4 @@ Route.group('', () => {
      */
     Route.put('', 'Api/UsuarioFilialController.update')
 
-}).prefix('/api/usuario-filial') 
+}).prefix('/api/usuario-filial').middleware(['ensureJwt']) 

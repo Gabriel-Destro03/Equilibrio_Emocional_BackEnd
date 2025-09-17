@@ -19,4 +19,4 @@ Route.group(() => {
   Route.put('/:id', 'Api/EmpresaController.update')
   Route.delete('/:id', 'Api/EmpresaController.destroy')
   Route.put('/:id/status', 'Api/EmpresaController.changeStatus')
-}).prefix('/api/empresa') 
+}).prefix('/api/empresa').middleware(['ensureJwt'])  

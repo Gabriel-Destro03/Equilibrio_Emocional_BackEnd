@@ -27,4 +27,4 @@ Route.group(() => {
   
   // Detalhes de um log específico
   Route.get('/:id', 'Api/EmailLogController.show')
-}).prefix('/api/email-logs') 
+}).prefix('/api/email-logs').middleware(['ensureJwt']) 

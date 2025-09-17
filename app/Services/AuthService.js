@@ -4,6 +4,7 @@ const { AuthRepository } = require('../Repositories/AuthRepository')
 const UsuarioRepository = require('../Repositories/UsuarioRepository')
 const PermissaoService = require('./PermissaoService')
 const TokenService = require('./tokens/TokenService')
+const TokenStore = require('./tokens/TokenStore')
 const UserRepository = require('../Repositories/UserRepository')
 const SendEmail = require('./Emails/SendEmail')
 const { createClient } = require('@supabase/supabase-js')
@@ -40,6 +41,9 @@ class AuthService {
             // Generate token
             const tokenData = this.prepareTokenData(usuario, userPerm)
             const tokenInfo = TokenService.createToken(tokenData)
+
+            // Store token in local in-memory list
+            TokenStore.add(tokenInfo.token)
 
             // Prepare and return response
             return this.prepareLoginResponse(usuario, userPerm, filiaisFormatadas, tokenInfo, authData)
@@ -203,6 +207,7 @@ class AuthService {
             uid: usuario.uid,
             email: usuario.email,
             nome: usuario.nome_completo,
+            empresa_id: usuario.empresa_id,
             permissoes: userPerm.map(p => p.permissoes.tag)
         }
     }
@@ -251,6 +256,9 @@ class AuthService {
             if (!decodedToken) {
                 throw new Error('Token inválido')
             }
+
+            // Remove token from local store
+            TokenStore.remove(token)
 
             // Perform logout
             await this.repository.signOut()

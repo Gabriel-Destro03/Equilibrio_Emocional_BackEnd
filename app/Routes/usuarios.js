@@ -27,7 +27,7 @@ Route.group(() => {
    *       401:
    *         description: Não autorizado
    */
-  Route.get('/', 'Api/UsuarioController.index')
+  Route.get('/', 'Api/UsuarioController.getUsuarioByEmpresaId')
 
   /**
    * @swagger
@@ -134,7 +134,25 @@ Route.group(() => {
    *         description: Usuário não encontrado
    */
   Route.get('/email/:email', 'Api/UsuarioController.getByEmail')
-  Route.get('empresa/:empresa_id', 'Api/UsuarioController.getUsuarioByEmpresaId')
+
+  /**
+   * @swagger
+   * /api/usuarios/empresa:
+   *   get:
+   *     tags:
+   *       - Usuários
+   *     summary: Lista todos os usuários da empresa do usuário logado
+   *     security:
+   *       - bearerAuth: []
+   *     responses:
+   *       200:
+   *         description: Lista de usuários da empresa retornada com sucesso
+   *       400:
+   *         description: Erro ao buscar usuários ou empresa ID não encontrado no token
+   *       401:
+   *         description: Não autorizado
+   */
+  // Route.get('/empresa', 'Api/UsuarioController.getUsuarioByEmpresaId')
   
   /**
    * @swagger
@@ -274,3 +292,4 @@ Route.group(() => {
   Route.delete('/:id', 'Api/UsuarioController.destroy')
 })
 .prefix('/api/usuarios')
+.middleware(['ensureJwt'])

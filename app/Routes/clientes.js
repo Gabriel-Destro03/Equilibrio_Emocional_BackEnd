@@ -66,4 +66,4 @@ Route.group(() => {
    */
   Route.post('/', 'Api/ClienteController.store')
 
-}).prefix('/api/clientes')
+}).prefix('/api/clientes').middleware(['ensureJwt'])

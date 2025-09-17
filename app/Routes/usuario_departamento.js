@@ -227,4 +227,4 @@ Route.group('', () => {
      *                   type: string
      */
     Route.delete('/:idUsuario/:idDepartamento', 'Api/UsuarioDepartamentoController.destroy')
-}).prefix('/api/usuario-departamento') 
+}).prefix('/api/usuario-departamento').middleware(['ensureJwt']) 

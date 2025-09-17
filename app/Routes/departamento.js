@@ -256,3 +256,4 @@ Route.group(() => {
   Route.get('/user/:uid', 'Api/DepartamentoController.getDepartamentosByUser')
 })
 .prefix('/api/departamentos')
+.middleware(['ensureJwt'])

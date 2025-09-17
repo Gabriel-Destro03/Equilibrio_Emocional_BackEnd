@@ -46,7 +46,8 @@ const globalMiddleware = [
 |
 */
 const namedMiddleware = {
-  auth: 'Adonis/Middleware/Auth'
+  auth: 'Adonis/Middleware/Auth',
+  ensureJwt: 'App/Middleware/EnsureJwt'
   // instance: 'App/Middleware/Instance'
 }
 

@@ -241,4 +241,4 @@ Route.group(() => {
      *               $ref: '#/components/schemas/Error'
      */
     Route.delete('/:id', 'Api/PerguntaController.destroy')
-}).prefix('/api/perguntas') 
+}).prefix('/api/perguntas').middleware(['ensureJwt']) 

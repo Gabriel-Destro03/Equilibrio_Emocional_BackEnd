@@ -55,9 +55,16 @@ class UsuarioController {
         }
     }
     
-    async getUsuarioByEmpresaId({params, response}) {
+    async getUsuarioByEmpresaId({request, response}) {
         try {
-            const usuarios = await this.service.getUsuarioByEmpresaId(params.empresa_id)
+            // Get empresa_id from token instead of URL parameter
+            const empresa_id = request.user.empresa_id
+            
+            if (!empresa_id) {
+                return response.status(400).json({ error: 'Empresa ID não encontrado no token' })
+            }
+            
+            const usuarios = await this.service.getUsuarioByEmpresaId(request)
             return response.status(200).json(usuarios)
         } catch (error) {
             return response.status(400).json({ error: error.message })

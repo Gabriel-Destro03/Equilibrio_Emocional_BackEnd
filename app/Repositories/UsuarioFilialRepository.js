@@ -40,6 +40,26 @@ class UsuarioFilialRepository {
         return data
     }
 
+    async getByUsuarioAndFilialByUid(uid) {
+        const { data, error } = await this.supabase
+            .from('usuario_filial')
+            .select(`*,
+                usuarios!inner(uid)`)
+            .eq('usuarios.uid', uid)
+
+        if (error && error.code !== 'PGRST116') { // PGRST116 means no rows found
+            console.error('Erro ao buscar usuario_filial por usuario e filial:', error.message)
+            throw new Error(`Erro ao buscar usuario_filial: ${error.message}`)
+        }
+
+        // Handle no rows found explicitly
+        if (error && error.code === 'PGRST116') {
+            return []
+        }
+
+        return data || []
+    }
+
     async getRepresentantesByFilialId(idFilial) {
         const { data, error } = await this.supabase
             .from('usuarios')

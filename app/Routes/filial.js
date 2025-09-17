@@ -237,3 +237,4 @@ Route.group(() => {
   Route.get('/empresa/:empresa_id', 'Api/FilialController.getFiliaisByEmpresaId')
 })
 .prefix('/api/filiais')
+.middleware(['ensureJwt'])

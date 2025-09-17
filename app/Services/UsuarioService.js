@@ -8,31 +8,30 @@ const UserRepository = require('../Repositories/UserRepository')
 const FiliaisRepository = require('../Repositories/FilialRepository')
 const DepartamentoRepository = require('../Repositories/DepartamentoRepository')
 const UsuarioDepartamentoRepository = require('../Repositories/UsuarioDepartamentoRepository')
+const UsuarioFilialRepository = require('../Repositories/UsuarioFilialRepository')
 
 const PasswordGenerator = require('../Utils/PasswordGenerator')
 const SendEmail = require('../Services/Emails/SendEmail')
 const TokenService = require('./tokens/TokenService')
 const crypto = require('crypto')
 
-/**
- * Serviço responsável pela lógica de negócios relacionada aos usuários
- */
+const ValidationHelper = require('../Helpers/ValidationHelper')
+const PermissoesHelper = require('../Helpers/PermissoesHelper')
+
 class UsuarioService {
     constructor() {
         this.repository = new UsuarioRepository()
         this.usuarioRepository = new UserRepository()
-
+        this.usuarioFilialRepository = new UsuarioFilialRepository()
         this.filiaisRepository = new FiliaisRepository()
         this.departamentoRepository = new DepartamentoRepository()
-
-        this.usuarioDepartamentoRepository = new UsuarioDepartamentoRepository();
+        this.usuarioDepartamentoRepository = new UsuarioDepartamentoRepository()
     }
 
-    /**
-     * Retorna todos os usuários ativos
-     * @returns {Promise<Array>} Lista de usuários
-     * @throws {Error} Erro ao buscar usuários
-     */
+    // =============================
+    // 🔹 MÉTODOS DE BUSCA
+    // =============================
+
     async getAllUsuarios() {
         try {
             return await this.repository.getAllUsuarios()
@@ -41,75 +40,111 @@ class UsuarioService {
         }
     }
 
-    /**
-     * Busca um usuário pelo ID
-     * @param {number} id - ID do usuário
-     * @returns {Promise<Object>} Dados do usuário
-     * @throws {Error} Erro ao buscar usuário ou usuário não encontrado
-     */
     async getUsuarioById(id) {
-        if (!id) {
-            throw new Error('ID do usuário é obrigatório')
-        }
-
+        ValidationHelper.requireField(id, 'ID do usuário é obrigatório')
         try {
             const usuario = await this.repository.getUsuarioById(id)
-            if (!usuario) {
-                throw new Error('Usuário não encontrado')
-            }
+            if (!usuario) throw new Error('Usuário não encontrado')
             return usuario
         } catch (error) {
             throw new Error(`Erro ao buscar usuário: ${error.message}`)
         }
     }
 
-    async getUsuarioByUid(id) {
-        if (!id) {
-            throw new Error('Uid do usuário é obrigatório')
-        }
-
+    async getUsuarioByUid(uid) {
+        ValidationHelper.requireField(uid, 'Uid do usuário é obrigatório')
         try {
-            const usuario = await this.repository.getUsuarioByUid(id)
-            if (!usuario) {
-                throw new Error('Usuário não encontrado')
-            }
+            const usuario = await this.repository.getUsuarioByUid(uid)
+            if (!usuario) throw new Error('Usuário não encontrado')
             return usuario
         } catch (error) {
             throw new Error(`Erro ao buscar usuário: ${error.message}`)
         }
     }
 
-    async getUsuarioByEmpresaId(empresa_id) {
-        if(!empresa_id) {
-            throw new Error('Id da Empresa é obrigatório')
+    async getUsuarioByEmail(email) {
+        ValidationHelper.requireField(email, 'Email do usuário é obrigatório')
+        try {
+            const usuario = await this.repository.getUsuarioByEmail(email)
+            if (!usuario) throw new Error('Usuário não encontrado')
+            return usuario
+        } catch (error) {
+            throw new Error(`Erro ao buscar usuário: ${error.message}`)
+        }
+    }
+
+    /**
+     * Retorna usuários de uma empresa, aplicando filtro conforme permissões
+     */
+    async getUsuarioByEmpresaId(request) {
+        const { empresa_id, uid, permissoes } = request.user
+
+        ValidationHelper.requireField(empresa_id, 'Id da Empresa é obrigatório')
+
+        // Valida se o usuário tem alguma permissão
+        PermissoesHelper.validarPermissoes(permissoes, [
+            PermissoesHelper.PERMISSOES.EMPRESA,
+            PermissoesHelper.PERMISSOES.FILIAL,
+            PermissoesHelper.PERMISSOES.DEPARTAMENTO
+        ])
+        const { isEmpresa, isFilial, isDepartamento } = PermissoesHelper.getNivelPermissao(permissoes)
+        if (!isEmpresa && !isFilial && !isDepartamento) {
+            throw new Error('Usuário não tem permissão para acessar esta funcionalidade')
         }
 
         try {
-            // 1. BUSCAR USUARIOS
-            const usuarios = await this.repository.getUsuariosByEmpresaId(empresa_id);
+            let usuarios = await this.repository.getUsuariosByEmpresaId(empresa_id)
             const usuariosIds = usuarios.map(u => u.id)
-            // 2. BUSCAR USUARIOS_FILIAIS
-            const usuarios_filias = await this.repository.getUsuariosFiliais(usuariosIds)
-            // 3. BUSCAR FILIAIS
-            const filiais = await this.filiaisRepository.getFiliaisByEmpresaId(empresa_id);
-            const filiaisIds = filiais.map(f => f.id);
 
-            // 4. BUSCAR DEPARTAMENTOS
-            const departamentos = await this.departamentoRepository.getDepartamentosByFiliaisId(filiaisIds);
-            const usuarios_departamentos = await this.usuarioDepartamentoRepository.getUsersByIds(usuariosIds)
+            const filiais = await this.filiaisRepository.getFiliaisByEmpresaId(empresa_id)
+            const filiaisIds = filiais.map(f => f.id)
 
+            const usuariosFiliais = await this.repository.getUsuariosFiliais(usuariosIds)
+            const departamentos = await this.departamentoRepository.getDepartamentosByFiliaisId(filiaisIds)
 
-            // 5. FORMATAR OBJETOS DE RESULTADO
-            const usuariosFormatados = usuarios.map(item => {
-                const usuarioRelacionamentoFilial = usuarios_filias?.filter(uf => uf?.id_usuario == item.id && uf.status === true)
-                .sort((a, b) => new Date(a.created_at) - new Date(b.created_at))[0];
-                const usuarioRelacionamentoDepartamento = usuarios_departamentos?.filter(ud => ud?.id_usuario == item.id && ud.status === true)
-                .sort((a, b) => new Date(a.created_at) - new Date(b.created_at))[0];
+            // 🔹 FILTROS POR PERMISSÃO
+            if(isEmpresa) {
+                
+            }else if (isFilial) {
+                const usuarioFilial = await this.usuarioFilialRepository.getByUsuarioAndFilialByUid(uid)
+                const idsPermitidos = new Set(usuarioFilial.map(u => u.id_filial))
 
-                const filial = filiais?.filter(f => f.id == usuarioRelacionamentoFilial?.id_filial)[0];
+                usuarios = usuarios.filter(usuario => {
+                    const rel = usuariosFiliais.find(uf => uf.id_usuario === usuario.id && uf.status)
+                    return rel && idsPermitidos.has(rel.id_filial)
+                })
+            }else if (isDepartamento) {
+                const usuarioAtual = await this.repository.getUsuarioByUid(uid)
+                if (!usuarioAtual) throw new Error('Usuário não encontrado')
 
-                const departamento = departamentos
-                    ?.filter(d => d.id == usuarioRelacionamentoDepartamento?.id_departamento)[0]
+                const usuarioDepartamentos = await this.usuarioDepartamentoRepository.getUsersByIds([usuarioAtual.id])
+                const idsPermitidos = new Set(
+                    usuarioDepartamentos.filter(ud => ud.status).map(ud => ud.id_departamento)
+                )
+
+                const usuariosDepartamentos = await this.usuarioDepartamentoRepository.getUsersByIds(usuariosIds)
+                usuarios = usuarios.filter(usuario => {
+                    const rel = usuariosDepartamentos.find(ud => ud.id_usuario === usuario.id && ud.status)
+                    return rel && idsPermitidos.has(rel.id_departamento)
+                })
+            }
+
+            // 🔹 FORMATAR RESULTADO
+            const usuariosDepartamentos = await this.usuarioDepartamentoRepository.getUsersByIds(
+                usuarios.map(u => u.id)
+            )
+
+            return usuarios.map(item => {
+                const uf = usuariosFiliais
+                    .filter(rel => rel.id_usuario === item.id && rel.status)
+                    .sort((a, b) => new Date(a.created_at) - new Date(b.created_at))[0]
+
+                const ud = usuariosDepartamentos
+                    .filter(rel => rel.id_usuario === item.id && rel.status)
+                    .sort((a, b) => new Date(a.created_at) - new Date(b.created_at))[0]
+
+                const filial = filiais.find(f => f.id === uf?.id_filial)
+                const departamento = departamentos.find(d => d.id === ud?.id_departamento)
 
                 return {
                     id: item.id,
@@ -126,78 +161,30 @@ class UsuarioService {
                     id_departamento: departamento?.id || null
                 }
             })
-            
-            return usuariosFormatados;
         } catch (error) {
-          throw new Error(`Erro ao buscar usuários: ${error.message}`)  
+            throw new Error(`Erro ao buscar usuários: ${error.message}`)
         }
     }
 
-    /**
-     * Busca um usuário pelo email
-     * @param {string} email - Email do usuário
-     * @returns {Promise<Object>} Dados do usuário
-     * @throws {Error} Erro ao buscar usuário ou usuário não encontrado
-     */
-    async getUsuarioByEmail(email) {
-        if (!email) {
-            throw new Error('Email do usuário é obrigatório')
-        }
+    // =============================
+    // 🔹 CRUD DE USUÁRIOS
+    // =============================
+
+    async createUsuario(data) {
+        const { nome_completo, email, telefone, cargo, id_filial, id_departamento, empresa_id } = data
+
+        ValidationHelper.requireField(nome_completo, 'Nome completo é obrigatório')
+        ValidationHelper.requireField(email, 'Email é obrigatório')
+        ValidationHelper.requireField(cargo, 'Cargo é obrigatório')
+        ValidationHelper.ValidateEmail(email)
+        ValidationHelper.ValidateTelefone(telefone)
 
         try {
-            const usuario = await this.repository.getUsuarioByEmail(email)
-            if (!usuario) {
-                throw new Error('Usuário não encontrado')
-            }
-            return usuario
-        } catch (error) {
-            throw new Error(`Erro ao buscar usuário: ${error.message}`)
-        }
-    }
-
-    /**
-     * Cria um novo usuário
-     * @param {Object} usuarioData - Dados do usuário
-     * @param {string} usuarioData.nome_completo - Nome completo do usuário
-     * @param {string} usuarioData.email - Email do usuário
-     * @param {string} usuarioData.telefone - Telefone do usuário
-     * @param {string} usuarioData.cargo - Cargo do usuário
-     * @returns {Promise<Object>} Dados do usuário criado
-     * @throws {Error} Erro ao criar usuário ou dados inválidos
-     */
-    async createUsuario(usuarioData) {
-        const { nome_completo, email, telefone, cargo, id_filial, id_departamento, empresa_id } = usuarioData
-
-
-        if (!nome_completo || !email || !cargo) {
-            throw new Error('Todos os campos são obrigatórios')
-        }
-
-        // Validação básica de email
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-        if (!emailRegex.test(email)) {
-            throw new Error('Email inválido')
-        }
-
-        // Validação básica de telefone (aceita apenas números)
-        const telefoneRegex = /^\d+$/
-
-        if ((telefone != null && telefone != "") && !telefoneRegex.test(telefone)) {
-            throw new Error('Telefone deve conter apenas números')
-        }
-
-        try {
-            // Verifica se já existe um usuário com o mesmo email
             const usuarioExistente = await this.repository.getUsuarioByEmail(email)
-            if (usuarioExistente) {
-                throw new Error('Já existe um usuário com este email')
-            }
+            if (usuarioExistente) throw new Error('Já existe um usuário com este email')
 
-            // Gera uma senha aleatória
             const password = PasswordGenerator.generatePassword()
 
-
-            // Cria o usuário no banco de dados
             const usuario = await this.repository.createUsuario({
                 nome_completo,
                 email,
@@ -209,142 +196,81 @@ class UsuarioService {
                 id_departamento
             })
 
-            // Gerar código único para reset de senha
+            if (!usuario) throw new Error('Erro ao criar usuário: Dados não retornados')
+
             const code = crypto.randomBytes(4).toString('hex').toUpperCase()
-            
-            const body = {
+            const token = TokenService.createToken({
                 uid: usuario.uid,
-                type: "email_activation",
-                code: code,
+                type: 'email_activation',
+                code,
                 status: true,
                 expira_em: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
-            }
+            }).token
 
-            // Gerar token com os dados do body
-            body.token = TokenService.createToken(body).token
-            const resetLink = `${process.env.VITE_URL_FRONT}/codigo?token=${body.token}`
-
-            // Salvar na tabela acoes_usuarios
             await this.usuarioRepository.saveUserAction({
                 uid: password,
                 type: 'email_activation',
-                code: code,
+                code,
                 status: true,
                 expira_em: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-                token: body.token
+                token
             })
 
+            const resetLink = `${process.env.VITE_URL_FRONT}/codigo?token=${token}`
             try {
-                // Envia email de boas-vindas com a senha
-                const resultEmail = await SendEmail.sendWelcomeEmail(email, resetLink, code)
-                
-            } catch (emailError) {
-                console.error('Erro ao enviar email de boas-vindas:', emailError)
-                // Não interrompe o fluxo se o email falhar
-            }
-
-            if (!usuario) {
-                console.error('Dados do usuário não retornados')
-                throw new Error('Erro ao criar usuário: Dados não retornados')
+                await SendEmail.sendWelcomeEmail(email, resetLink, code)
+            } catch (err) {
+                console.error('Erro ao enviar email de boas-vindas:', err)
             }
 
             return usuario
         } catch (error) {
-            console.error('Erro na criação do usuário:', error)
             throw new Error(`Erro ao criar usuário: ${error.message}`)
         }
     }
 
-    /**
-     * Atualiza um usuário existente
-     * @param {number} id - ID do usuário
-     * @param {Object} usuarioData - Dados do usuário para atualização
-     * @param {string} [usuarioData.nome_completo] - Nome completo do usuário
-     * @param {string} [usuarioData.email] - Email do usuário
-     * @param {string} [usuarioData.telefone] - Telefone do usuário
-     * @param {string} [usuarioData.cargo] - Cargo do usuário
-     * @returns {Promise<Object>} Dados do usuário atualizado
-     * @throws {Error} Erro ao atualizar usuário ou dados inválidos
-     */
-    async updateUsuario(id, usuarioData) {
-        if (!id) {
-            throw new Error('ID do usuário é obrigatório')
-        }
+    async updateUsuario(id, data) {
+        ValidationHelper.requireField(id, 'ID do usuário é obrigatório')
 
-        const { nome_completo, email, telefone, cargo, id_filial, id_departamento } = usuarioData
-
+        const { nome_completo, email, telefone, cargo } = data
         if (!nome_completo && !email && !telefone && !cargo) {
             throw new Error('Pelo menos um campo deve ser fornecido para atualização')
         }
 
-        // Validação de email se fornecido
-        if (email) {
-            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-            if (!emailRegex.test(email)) {
-                throw new Error('Email inválido')
-            }
-        }
-
-        // Validação de telefone se fornecido
-        if (telefone) {
-            const telefoneRegex = /^\d+$/
-            if (!telefoneRegex.test(telefone)) {
-                throw new Error('Telefone deve conter apenas números')
-            }
-        }
+        if (email) ValidationHelper.ValidateEmail(email)
+        if (telefone) ValidationHelper.ValidateTelefone(telefone)
 
         try {
             const usuario = await this.repository.getUsuarioById(id)
-            if (!usuario) {
-                throw new Error('Usuário não encontrado')
-            }
+            if (!usuario) throw new Error('Usuário não encontrado')
 
-            // Se estiver atualizando o email, verifica se já existe outro usuário com o mesmo email
             if (email && email !== usuario.email) {
                 const usuarioExistente = await this.repository.getUsuarioByEmail(email)
-                if (usuarioExistente) {
-                    throw new Error('Já existe um usuário com este email')
-                }
+                if (usuarioExistente) throw new Error('Já existe um usuário com este email')
             }
 
-            return await this.repository.updateUsuario(id, usuarioData)
+            return await this.repository.updateUsuario(id, data)
         } catch (error) {
             throw new Error(`Erro ao atualizar usuário: ${error.message}`)
         }
     }
 
-    async changeStatus(id, status){
-        if (!id) {
-            throw new Error('ID do usuário é obrigatório')
-        }
-
-        if (status === undefined || status === null) {
-            throw new Error('Status é obrigatório')
-        }
+    async changeStatus(id, status) {
+        ValidationHelper.requireField(id, 'ID do usuário é obrigatório')
+        if (status === undefined || status === null) throw new Error('Status é obrigatório')
 
         try {
             const usuario = await this.repository.getUsuarioById(id)
-            if (!usuario) {
-                throw new Error('Usuário não encontrado')
-            }
+            if (!usuario) throw new Error('Usuário não encontrado')
 
             return await this.repository.inactivateUsuario(id, status)
         } catch (error) {
-            throw new Error(`Erro ao inativar usuário: ${error.message}`)
+            throw new Error(`Erro ao alterar status do usuário: ${error.message}`)
         }
     }
 
-    /**
-     * Inativa um usuário
-     * @param {number} id - ID do usuário
-     * @returns {Promise<Object>} Dados do usuário inativado
-     * @throws {Error} Erro ao inativar usuário ou usuário não encontrado
-     */
     async inactivateUsuario(id, status) {
-        if (!id) {
-            throw new Error('ID do usuário é obrigatório')
-        }
-
+        ValidationHelper.requireField(id, 'ID do usuário é obrigatório')
         try {
             return await this.repository.inactivateUsuario(id, status)
         } catch (error) {
@@ -352,31 +278,32 @@ class UsuarioService {
         }
     }
 
+    // =============================
+    // 🔹 USUÁRIOS POR FILIAL
+    // =============================
     async getUsuariosByFilial(uid) {
-        if (!uid) {
-            throw new Error('ID do usuário é obrigatório')
-        }
+        ValidationHelper.requireField(uid, 'ID do usuário é obrigatório')
 
         try {
             const PERMISSOES = {
                 ADM: [7],
                 FILIAL: [2, 5],
                 DEPARTAMENTO: [3, 6]
-              };
+            }
 
-            const permissaoUser = await this.repository.getUserPermissions(uid);
-             
-            const permissoes = permissaoUser.map(p => p.permissoes) ?? [];
-            const possuiPermissao = (ids) =>
-                permissoes.some(p => ids.includes(p.id));
-            const isAdm = possuiPermissao(PERMISSOES.ADM);
-            const isRepresentanteFilial = possuiPermissao(PERMISSOES.FILIAL);
-            const isRepresentanteDepartamento = possuiPermissao(PERMISSOES.DEPARTAMENTO);
-            return await this.repository.getUsuariosByFilial(uid, isAdm, isRepresentanteFilial,isRepresentanteDepartamento)
+            const permissaoUser = await this.repository.getUserPermissions(uid)
+            const permissoes = permissaoUser.map(p => p.permissoes) ?? []
+            const possuiPermissao = ids => permissoes.some(p => ids.includes(p.id))
+
+            const isAdm = possuiPermissao(PERMISSOES.ADM)
+            const isFilial = possuiPermissao(PERMISSOES.FILIAL)
+            const isDepartamento = possuiPermissao(PERMISSOES.DEPARTAMENTO)
+
+            return await this.repository.getUsuariosByFilial(uid, isAdm, isFilial, isDepartamento)
         } catch (error) {
             throw new Error(`Erro ao buscar usuários da filial: ${error.message}`)
         }
     }
 }
 
-module.exports = UsuarioService 
+module.exports = UsuarioService

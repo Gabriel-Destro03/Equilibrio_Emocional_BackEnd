@@ -34,6 +34,6 @@ Route.group('dashboard', () => {
     Route.post('tendencias', 'Api/DashboardController.getTendencias')
     Route.post('engajamento', 'Api/DashboardController.getEngajamento')
 
-}).prefix('/dashboard')
+}).prefix('/dashboard').middleware(['ensureJwt'])
 
 module.exports = Route; 
