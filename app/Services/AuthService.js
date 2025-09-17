@@ -279,6 +279,10 @@ class AuthService {
             // Gerar código único para reset de senha
             const resetCode = crypto.randomBytes(4).toString('hex').toUpperCase()
             
+            if(user.status == false || user.uid.length == 8){
+                return { success: false, message: 'Usuário não ativo' }
+            }
+            
             const body = {
                 uid: user.uid,
                 type: "reset_password",
