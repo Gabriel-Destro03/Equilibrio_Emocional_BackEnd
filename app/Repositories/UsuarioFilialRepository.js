@@ -103,19 +103,6 @@ class UsuarioFilialRepository {
 
     async updateUsuarioFilial(idUsuario, idFilial, updateData) {
         try {
-            // Primeiro, busca o uid do usuário
-            const { data: usuarioData, error: usuarioError } = await this.supabase
-                .from('usuarios')
-                .select('uid')
-                .eq('id', idUsuario)
-                .single()
-
-            if (usuarioError) throw new Error(usuarioError.message)
-            if (!usuarioData) throw new Error('Usuário não encontrado')
-
-            const uid = usuarioData.uid
-
-            // Atualiza o status de representante
             const { data, error } = await this.supabase
                 .from('usuario_filial')
                 .update(updateData)
@@ -125,34 +112,6 @@ class UsuarioFilialRepository {
                 .single()
 
             if (error) throw new Error(error.message)
-
-            // Se estiver adicionando como representante
-            if (updateData.is_representante === true) {
-                // Adiciona as permissões 3, 4 e 5
-                const permissoesParaAdicionar = [
-                    { id_user: idUsuario, id_permissao: 1, uid },
-                    { id_user: idUsuario, id_permissao: 3, uid },
-                    { id_user: idUsuario, id_permissao: 4, uid },
-                    { id_user: idUsuario, id_permissao: 5, uid }
-                ]
-
-                const { error: insertError } = await this.supabase
-                    .from('usuario_permissoes')
-                    .insert(permissoesParaAdicionar)
-
-                if (insertError) throw new Error(`Erro ao adicionar permissões: ${insertError.message}`)
-            } 
-            // Se estiver removendo como representante
-            else if (updateData.is_representante === false) {
-                // Remove as permissões 1, 3, 4 e 5
-                const { error: deleteError } = await this.supabase
-                    .from('usuario_permissoes')
-                    .delete()
-                    .eq('id_user', idUsuario)
-                    .in('id_permissao', [1, 3, 4, 5])
-
-                if (deleteError) throw new Error(`Erro ao remover permissões: ${deleteError.message}`)
-            }
 
             return data
         } catch (error) {

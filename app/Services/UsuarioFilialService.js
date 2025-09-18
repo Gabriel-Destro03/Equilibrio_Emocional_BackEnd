@@ -1,10 +1,14 @@
 'use strict'
 
 const UsuarioFilialRepository = require('../Repositories/UsuarioFilialRepository')
+const UsuarioRepository = require('../Repositories/UsuarioRepository')
+const UsuarioDepartamentoRepository = require('../Repositories/UsuarioDepartamentoRepository')
 
 class UsuarioFilialService {
     constructor() {
         this.repository = new UsuarioFilialRepository()
+        this.usuarioRepository = new UsuarioRepository()
+        this.usuarioDepartamentoRepository = new UsuarioDepartamentoRepository()
     }
 
     async getAllUsuarioFiliais() {
@@ -54,24 +58,69 @@ class UsuarioFilialService {
     }
 
     async updateUsuarioFilial(idUsuario, idFilial, updateData) {
-         // Check if the relationship exists before attempting to update
-         const existing = await this.repository.getByUsuarioAndFilial(idUsuario, idFilial)
-         if (!existing) {
-              throw new Error('Associação usuario_filial não encontrada')
-         }
+        // Check if the relationship exists before attempting to update
+        const existing = await this.repository.getByUsuarioAndFilial(idUsuario, idFilial)
+        if (!existing) {
+            throw new Error('Associação usuario_filial não encontrada')
+        }
 
-         // We only allow updating is_representante for now based on requirements
-         // Validate updateData has the expected structure/fields
-         if (updateData.is_representante === undefined) {
-             throw new Error('Campo is_representante é obrigatório para atualização')
-         }
+        if (updateData.is_representante === undefined) {
+            throw new Error('Campo is_representante é obrigatório para atualização')
+        }
 
-         try {
-            return await this.repository.updateUsuarioFilial(idUsuario, idFilial, { is_representante: updateData.is_representante })
-         } catch (error) {
+        // Buscar usuário para obter UID
+        const usuario = await this.usuarioRepository.getUsuarioById(idUsuario)
+        if (!usuario || !usuario.uid) {
+            throw new Error('Usuário ou UID não encontrado')
+        }
+        const uid = usuario.uid
+
+        try {
+            // 1) Atualiza o vínculo
+            const updated = await this.repository.updateUsuarioFilial(idUsuario, idFilial, { is_representante: updateData.is_representante })
+
+            // 2) Regras de permissões
+            if (updateData.is_representante === true) {
+                await this._handleAdicaoPermissoesFilial(idUsuario, uid)
+            } else {
+                await this._handleRemocaoPermissoesFilial(idUsuario)
+            }
+
+            return updated
+        } catch (error) {
             console.error('Erro ao atualizar usuario_filial no service:', error.message)
             throw new Error(`Erro ao atualizar usuario_filial: ${error.message}`)
-         }
+        }
+    }
+
+    // Adiciona permissões de representante de filial que estiverem faltando
+    async _handleAdicaoPermissoesFilial(idUsuario, uid) {
+        const currentPerms = await this.usuarioRepository.getUserPermissions(uid)
+        const currentIds = Array.isArray(currentPerms)
+            ? currentPerms.map(p => p.id_permissao).filter(Boolean)
+            : []
+
+        const requiredIds = [1, 3, 4, 5]
+        const missingIds = requiredIds.filter(id => !currentIds.includes(id))
+
+        if (missingIds.length > 0) {
+            await this.usuarioDepartamentoRepository.addUserPermissions(idUsuario, uid, missingIds)
+        }
+    }
+
+    // Remove permissões quando usuário não é mais representante
+    async _handleRemocaoPermissoesFilial(idUsuario) {
+        // Se não é representante em nenhuma filial, remove permissões de filial
+        const isRepAlgumaFilial = await this.repository.userHasAnyFilialRepresentante(idUsuario)
+        if (!isRepAlgumaFilial) {
+            await this.usuarioDepartamentoRepository.removeUserPermissions(idUsuario, [1, 3, 4, 5])
+        }
+
+        // Se não é representante em nenhum departamento, remove permissão de departamento
+        const isRepAlgumDepartamento = await this.usuarioDepartamentoRepository.userHasAnyDepartamentoRepresentante(idUsuario)
+        if (!isRepAlgumDepartamento) {
+            await this.usuarioDepartamentoRepository.removeUserPermissions(idUsuario, [6])
+        }
     }
 
     async deleteUsuarioFilial(idUsuario, idFilial) {

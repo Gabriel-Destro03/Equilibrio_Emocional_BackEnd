@@ -155,6 +155,26 @@ class UsuarioDepartamentoRepository {
         return { removed: permissionIds }
     }
 
+    // Helper: adicionar permissões específicas ao usuário (ignora se já existir via upstream lógica)
+    async addUserPermissions(idUsuario, uid, permissionIds) {
+        if (!Array.isArray(permissionIds) || permissionIds.length === 0) {
+            return { inserted: [] }
+        }
+
+        const rowsToInsert = permissionIds.map((permissionId) => ({ id_user: idUsuario, id_permissao: permissionId, uid }))
+
+        const { error } = await this.supabase
+            .from('usuario_permissoes')
+            .insert(rowsToInsert)
+
+        if (error) {
+            console.error('Erro ao adicionar permissões do usuário:', error.message)
+            throw new Error(`Erro ao adicionar permissões do usuário: ${error.message}`)
+        }
+
+        return { inserted: permissionIds }
+    }
+
     async delete(idUsuario, idDepartamento) {
         const { error } = await this.supabase
             .from('usuario_departamento')
