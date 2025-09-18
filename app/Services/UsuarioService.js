@@ -104,7 +104,7 @@ class UsuarioService {
 
             // 🔹 FILTROS POR PERMISSÃO
             if(isEmpresa) {
-                
+
             }else if (isFilial) {
                 const usuarioFilial = await this.usuarioFilialRepository.getByUsuarioAndFilialByUid(uid)
                 const idsPermitidos = new Set(usuarioFilial.map(u => u.id_filial))
@@ -263,7 +263,7 @@ class UsuarioService {
             const usuario = await this.repository.getUsuarioById(id)
             if (!usuario) throw new Error('Usuário não encontrado')
 
-            return await this.repository.inactivateUsuario(id, status)
+            return await this.repository.inactivateUsuario(id, !status)
         } catch (error) {
             throw new Error(`Erro ao alterar status do usuário: ${error.message}`)
         }
