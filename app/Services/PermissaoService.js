@@ -22,17 +22,13 @@ class PermissaoService {
      */
     async addPermissionsToUser(userId, uid, permissionIds) {
         try {
-            console.log(`[DEBUG] addPermissionsToUser - userId: ${userId}, uid: ${uid}, permissions: ${permissionIds}`)
-            
             // 1. Buscar permissões existentes
             const permissoesExistentes = await this.repository.getUserPermissions(uid)
-            console.log(`[DEBUG] Permissões existentes para uid ${uid}:`, permissoesExistentes)
             
             // 2. Identificar permissões faltantes
             const permissoesFaltantes = permissionIds.filter(id => 
                 !permissoesExistentes.some(p => p.id_permissao === id)
             )
-            console.log(`[DEBUG] Permissões faltantes:`, permissoesFaltantes)
 
             // 3. Adicionar apenas as permissões faltantes
             if (permissoesFaltantes.length > 0) {
@@ -41,10 +37,8 @@ class PermissaoService {
                     id_permissao: id,
                     uid: uid
                 }))
-                console.log(`[DEBUG] Permissões para inserir:`, permissoesParaInserir)
 
                 await this.repository.insertUserPermissions(permissoesParaInserir)
-                console.log(`[DEBUG] Permissões inseridas com sucesso`)
             } else {
                 console.log(`[DEBUG] Nenhuma permissão nova para inserir`)
             }
@@ -138,21 +132,17 @@ class PermissaoService {
 
             // Obter permissões que devem ser mantidas
             const requiredPermissions = await this.getRequiredPermissionsForUser(userId)
-            console.log(`[DEBUG] Usuário ${userId} - Permissões necessárias:`, requiredPermissions)
             
             // Obter permissões do tipo que está sendo removido
             const permissionsToRemove = this.representativeTypes[representativeType]
-            console.log(`[DEBUG] Permissões do tipo ${representativeType}:`, permissionsToRemove)
             
             // Filtrar apenas as permissões que não são necessárias para outros tipos
             const permissionsToActuallyRemove = permissionsToRemove.filter(perm => 
                 !requiredPermissions.includes(perm)
             )
-            console.log(`[DEBUG] Permissões que serão removidas:`, permissionsToActuallyRemove)
 
             if (permissionsToActuallyRemove.length > 0) {
                 await this.removePermissionsFromUser(userId, permissionsToActuallyRemove)
-                console.log(`[DEBUG] Permissões removidas com sucesso para usuário ${userId}`)
             } else {
                 console.log(`[DEBUG] Nenhuma permissão removida para usuário ${userId} - todas são necessárias para outros tipos`)
             }
@@ -200,8 +190,6 @@ class PermissaoService {
                 filiais: filiais || [],
                 departamentos: departamentos || []
             }
-            
-            console.log(`[DEBUG] Status de representante para usuário ${userId}:`, status)
             return status
         } catch (error) {
             console.error(`Erro ao verificar status de representante para usuário ${userId}:`, error.message)

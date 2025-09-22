@@ -95,13 +95,13 @@ class UsuarioDepartamentoController {
      *                 error:
      *                   type: string
      */
-    async getRepresentantesByDepartamento({ params, response }){
+    async getRepresentantesByDepartamento({ request, params, response }){
         try {
             const { idDepartamento } = params
             if (!idDepartamento) {
                 return response.status(400).json({ error: 'ID do departamento é obrigatório nos parâmetros' })
             }
-            const representantes = await this.service.getRepresentantesByDepartamento(idDepartamento)
+            const representantes = await this.service.getRepresentantesByDepartamento(request, idDepartamento)
             return response.status(200).json(representantes)
         } catch (error) {
             console.error('Erro no controller ao buscar usuario_departamento:', error.message)
@@ -225,7 +225,7 @@ class UsuarioDepartamentoController {
                  return response.status(400).json({ error: 'id_usuario, id_departamento e is_representante são obrigatórios no corpo da requisição' })
             }
 
-            const usuarioDepartamento = await this.service.updateUsuarioDepartamento(id_usuario, id_departamento, { is_representante })
+            const usuarioDepartamento = await this.service.updateUsuarioDepartamento(id_usuario, id_departamento, is_representante)
             return response.status(200).json(usuarioDepartamento)
         } catch (error) {
             console.error('Erro no controller ao atualizar usuario_departamento:', error.message)

@@ -166,7 +166,6 @@ class EmpresaService {
             const representantesAdicionar = representantesInput
               .filter(rep => !idsAtuais.includes(rep.id))
               .map(rep => {
-                console.log(`[DEBUG] Representante para adicionar:`, rep)
                 return {
                   usuario_id: rep.id,
                   usuario_uid: rep.uid,
@@ -186,7 +185,6 @@ class EmpresaService {
                 await this.repository.criarRepresentante(representantesAdicionar)
                 // Gerenciar permissões após adição
                 for (const rep of representantesAdicionar) {
-                    console.log(`[DEBUG] Adicionando permissões para usuário ${rep.usuario_id} com uid ${rep.usuario_uid}`)
                     await this.permissaoService.addRepresentativePermissions(rep.usuario_id, rep.usuario_uid, 'rep_empresa')
                 }
             }

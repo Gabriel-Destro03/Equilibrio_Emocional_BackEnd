@@ -52,56 +52,19 @@ class UsuarioDepartamentoRepository {
         return data
     }
 
-    async getDepartamentoById(idDepartamento) {
+    async getByUsuarioAndDepartamentoINIds(ids){
         const { data, error } = await this.supabase
-            .from('departamentos')
-            .select(`id, id_filial`)
-            .eq('id', idDepartamento)
-            .single()
-    
-        if (error) {
-            throw new Error(`Erro ao buscar departamento: ${error.message}`)
-        }
-        return data
-    }
-
-    async getUsuariosByFilialId(idFilial) {
-        const { data, error } = await this.supabase
-            .from('usuario_filial')
+            .from('usuario_departamento')
             .select(`
-                id,
-                id_usuario,
-                id_filial,
-                created_at,
-                status,
-                usuarios ( nome_completo )
+                *,
+                departamentos(
+                *,
+                filiais(*)
+                ),
+                usuarios(*)
             `)
-            .eq('id_filial', idFilial)
-    
-        if (error) {
-            throw new Error(`Erro ao buscar usuários da filial: ${error.message}`)
-        }
-        return data
-    }
-
-    async getUsuariosByDepartamentoId(idDepartamento) {
-        const { data, error } = await this.supabase
-            .from('usuarios')
-            .select(`*,
-                usuario_departamento(id_usuario, id_departamento, is_representante)
-            `)
-            .eq('empresa_id', idDepartamento)
-        // .from('usuario_departamento')
-            // .select(`
-            //     *,
-            //     usuarios(nome_completo, empresa_id)
-            // `)
-        
-            // const dataFiltrado = data.filter(d => d.usuarios != null && (d.usuarios?.empresa_id == idDepartamento))
-
-        if (error) {
-            throw new Error(`Erro ao buscar usuários do departamento: ${error.message}`)
-        }
+            .in('id_departamento', ids);
+            
         return data
     }
     
@@ -134,21 +97,6 @@ class UsuarioDepartamentoRepository {
         return data
     }
 
-
-    async getUserUid(idUsuario) {
-        const { data, error } = await this.supabase
-            .from('usuarios')
-            .select('uid')
-            .eq('id', idUsuario)
-            .single()
-
-        if (error) {
-            console.error('Erro ao buscar UID do usuário:', error.message)
-            throw new Error(`Erro ao buscar UID do usuário: ${error.message}`)
-        }
-        return data
-    }
-
     async delete(idUsuario, idDepartamento) {
         const { error } = await this.supabase
             .from('usuario_departamento')
@@ -162,6 +110,20 @@ class UsuarioDepartamentoRepository {
         }
          // Supabase delete does not return data by default, just error
          return { message: 'UsuarioDepartamento deletado com sucesso' }
+    }
+
+    async getUserByIdSingle(idUsuario) {
+        const { data, error } = await this.supabase
+            .from('usuario_departamento')
+            .select('*')
+            .eq('id_usuario', idUsuario)
+
+        if (error) {
+            console.error('Erro ao buscar uid do usuário:', error.message)
+            throw new Error(`Erro ao buscar uid do usuário: ${error.message}`)
+        }
+
+        return data
     }
 }
 
