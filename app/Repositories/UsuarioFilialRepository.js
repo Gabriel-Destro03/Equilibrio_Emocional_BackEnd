@@ -126,6 +126,20 @@ class UsuarioFilialRepository {
          return { message: 'UsuarioFilial deletado com sucesso' }
     }
 
+    async getUserFilialByIdSingle(idUsuario) {
+        const { data, error } = await this.supabase
+            .from('usuario_filial')
+            .select('*')
+            .eq('id_usuario', idUsuario)
+
+        if (error) {
+            console.error('Erro ao buscar vínculos de usuário com filial:', error.message)
+            throw new Error(`Erro ao buscar vínculos de usuário com filial: ${error.message}`)
+        }
+
+        return data
+    }
+
     async getUserUid(idUsuario) {
         const { data, error } = await this.supabase
             .from('usuarios')

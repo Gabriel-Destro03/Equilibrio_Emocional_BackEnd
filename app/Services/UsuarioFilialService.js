@@ -39,6 +39,7 @@ class UsuarioFilialService {
 
             // 3. Busca representantes via usuario_filial
             const representantesFilial = await this.repository.getRepresentantesByFilialId(empresa_id);
+
             // 4. Une e transforma os dados para o formato desejado
             let usuarios = representantesFilial.map(r => {
                 const usuario = r.usuarios || {};
@@ -46,8 +47,8 @@ class UsuarioFilialService {
             
                 // Busca o departamento correspondente do usuário e da filial
                 const departamentoObj = representantesDepartamento.find(d =>
-                    d.id_usuario === usuario.id &&
-                    d.departamentos?.filiais?.id === filial.id
+                    d.id_usuario === usuario.id //&&
+                //     d.departamentos?.filiais?.id === filial.id
                 );
             
                 // Remove 'filiais' de dentro do departamento
@@ -56,7 +57,7 @@ class UsuarioFilialService {
                 return {
                     id: r.id,
                     id_usuario: Number(usuario.id),
-                    id_filial: Number(filiais.id || 0),
+                    id_filial: Number(filial.id || 0),
                     created_at: r.created_at,
                     status: r.status,
                     is_representante: r.is_representante,
@@ -138,6 +139,11 @@ class UsuarioFilialService {
          try {
             const result = await this.repository.update(idUsuario, idFilial, updateData)
             
+            // Quando remover representante, verificar e deletar vínculo não-representante semelhante ao caso de departamento
+            if (updateData.is_representante !== true) {
+                await this._verificarEDeletarVinculoNaoRepresentante(idUsuario, idFilial)
+            }
+
             // Gerenciar permissões após atualização
             if (updateData.is_representante === true) {
                 // Buscar o uid do usuário para gerenciar permissões
@@ -152,6 +158,24 @@ class UsuarioFilialService {
             console.error('Erro ao atualizar usuario_filial no service:', error.message)
             throw new Error(`Erro ao atualizar usuario_filial: ${error.message}`)
          }
+    }
+
+    async _verificarEDeletarVinculoNaoRepresentante(idUsuario, idFilial) {
+        const vinculos = await this.repository.getUserFilialByIdSingle(idUsuario)
+        if (!Array.isArray(vinculos) || vinculos.length < 2) return
+
+        // Ordena por created_at asc e ignora o primeiro (mais antigo)
+        const [, ...restantes] = vinculos
+            .sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
+
+        // Filtra apenas vínculos com is_representante === false
+        const naoRepresentantes = restantes.filter(v => v.is_representante === false)
+
+        // Se existir vínculo não representante para a mesma filial, deletar
+        const existe = naoRepresentantes.some(v => v.id_filial === idFilial)
+        if (existe) {
+            await this.deleteUsuarioFilial(idUsuario, idFilial)
+        }
     }
 
     async deleteUsuarioFilial(idUsuario, idFilial) {
