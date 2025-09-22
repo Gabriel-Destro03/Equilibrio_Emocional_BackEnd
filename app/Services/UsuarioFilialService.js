@@ -2,11 +2,15 @@
 
 const UsuarioFilialRepository = require('../Repositories/UsuarioFilialRepository')
 const PermissaoService = require('./PermissaoService')
+const DepartamentoService = require('./DepartamentoService')
+const UsuarioDepartamentoRepository = require('../Repositories/UsuarioDepartamentoRepository')
 
 class UsuarioFilialService {
     constructor() {
         this.repository = new UsuarioFilialRepository()
         this.permissaoService = new PermissaoService()
+        this.departamentoService = new DepartamentoService()
+        this.usuarioDepartamentoRepository = new UsuarioDepartamentoRepository()
     }
 
     async getAllUsuarioFiliais() {
@@ -17,6 +21,75 @@ class UsuarioFilialService {
             throw new Error(`Erro ao buscar usuario_filial: ${error.message}`)
         }
     }
+
+    async getRepresentantesByFilial(request, idFilial) {
+        if (!idFilial) {
+            throw new Error('ID da filial é obrigatório');
+        }
+    
+        try {
+            const { empresa_id } = request.user;
+    
+            // 1. Busca departamentos da empresa
+            const departamentos = await this.departamentoService.getByEmpresaId(empresa_id);
+            const departamentosIds = departamentos.map(d => d.id);
+    
+            // 2. Busca representantes por departamento
+            const representantesDepartamento = await this.usuarioDepartamentoRepository.getByUsuarioAndDepartamentoINIds(departamentosIds);
+
+            // 3. Busca representantes via usuario_filial
+            const representantesFilial = await this.repository.getRepresentantesByFilialId(empresa_id);
+            // 4. Une e transforma os dados para o formato desejado
+            let usuarios = representantesFilial.map(r => {
+                const usuario = r.usuarios || {};
+                const filial = r.filiais;
+            
+                // Busca o departamento correspondente do usuário e da filial
+                const departamentoObj = representantesDepartamento.find(d =>
+                    d.id_usuario === usuario.id &&
+                    d.departamentos?.filiais?.id === filial.id
+                );
+            
+                // Remove 'filiais' de dentro do departamento
+                const { filiais, ...departamentoSemFiliais } = departamentoObj?.departamentos || {};
+            
+                return {
+                    id: r.id,
+                    id_usuario: Number(usuario.id),
+                    id_filial: Number(filiais.id || 0),
+                    created_at: r.created_at,
+                    status: r.status,
+                    is_representante: r.is_representante,
+                    usuarios: usuario,
+                    departamento: departamentoSemFiliais, // sem 'filiais'
+                    filiais: filial
+                };
+            });
+            
+    
+            // 5. Ordena por id_departamento e depois por id_usuario
+            usuarios.sort((a, b) => {
+                const depA = a.id_filial || 0;
+                const depB = b.id_filial || 0;
+                if (depA !== depB) return depA - depB;
+    
+                const userA = a.id_usuario || 0;
+                const userB = b.id_usuario || 0;
+                return userA - userB;
+            });
+    
+            // 6. Remove duplicados por id_usuario, mantendo o primeiro (já ordenado)
+            const deduped = Array.from(new Map(usuarios.map(u => [u.id_usuario, u])).values());
+    
+            return deduped;
+    
+        } catch (error) {
+            console.error('Erro ao buscar representantes por filial no service:', error.message);
+            throw new Error(`Erro ao buscar representantes por filial: ${error.message}`);
+        }
+    }
+    
+    
 
     async createUsuarioFilial(usuarioFilialData) {
         const { id_usuario, id_filial, is_representante } = usuarioFilialData
@@ -43,17 +116,7 @@ class UsuarioFilialService {
         }
     }
 
-    async getRepresentantesByFilial(idFilial) {
-        if (!idFilial) {
-            throw new Error('ID da filial é obrigatório')
-        }
-        try {
-            return await this.repository.getRepresentantesByFilialId(idFilial)
-        } catch (error) {
-            console.error('Erro ao buscar representantes por filial no service:', error.message)
-            throw new Error(`Erro ao buscar representantes por filial: ${error.message}`)
-        }
-    }
+    
 
     async updateUsuarioFilial(idUsuario, idFilial, updateData) {
          // Check if the relationship exists before attempting to update

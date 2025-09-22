@@ -60,36 +60,25 @@ class UsuarioFilialRepository {
         return data || []
     }
 
-    async getRepresentantesByFilialId(idFilial) {
-        const { data, error } = await this.supabase
-            .from('usuarios')
-            .select(`*,
-                usuario_filial(id_usuario, id_filial, is_representante)    
-            `)
-            .eq('empresa_id', idFilial)
-        //const dataFiltrado = data.filter(d => d.usuarios != null && (d.usuarios?.empresa_id == idFilial))
-
-        if (error) {
-            console.error('Erro ao buscar representantes por filial:', error.message)
-            throw new Error(`Erro ao buscar representantes por filial: ${error.message}`)
-        }
-        return data
-    }
-
-    async getRepresentantesByEmpresaId(idEmpresa) {
+    async getRepresentantesByFilialId(empresa_id) {
         const { data, error } = await this.supabase
             .from('usuario_filial')
             .select(`
-                *,\
-                usuarios(nome_completo)\
+                *,
+                filiais!inner(*),
+                usuarios(*)
             `)
-            .eq('usuarios.empresa_id', idEmpresa)
+            .eq('filiais.empresa_id', empresa_id)
+            .order('created_at', { ascending: false })
+        
 
         if (error) {
-            console.error('Erro ao buscar representantes por filial:', error.message)
-            throw new Error(`Erro ao buscar representantes por filial: ${error.message}`)
+            console.error('Erro ao buscar representantes por filial:', error.message);
+            throw new Error(`Erro ao buscar representantes por filial: ${error.message}`);
         }
-        return data
+
+        return data;
+
     }
 
     async create(usuarioFilialData) {
