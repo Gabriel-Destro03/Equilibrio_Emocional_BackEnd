@@ -26,23 +26,24 @@ class JobNotificacaoQuestionarioPendente extends Task {
             return
         }
     
-        data.forEach(user => {
-            SendEmail.sendEmail({
-                to: user.email,
-                subject: 'Notificação de Questionário Pendente',
-                html: `
-                    <p>Olá <strong>${user.nome_completo}</strong>,</p>
-                    <p>Notamos que você ainda não respondeu ao seu questionário semanal.</p>
-                    <p>A semana já está quase terminando e sua participação é muito importante para acompanharmos seu progresso e bem-estar.</p>
-                    <p>Reserve alguns minutinhos e complete o questionário antes do fim da semana.</p>
-                    <a href="https://app.claraconecta.com.br" class="button">Responder agora</a>
-                    <p>
-                        Se você já respondeu e este e-mail foi enviado por engano, pode ignorá-lo.
-                    </p>
-                `,
-                title: 'Notificação de Questionário Pendente'
-            });
-        });
+		for (const user of data) {
+			await SendEmail.sendEmail({
+				to: user.email,
+				subject: 'Notificação de Questionário Pendente',
+				html: `
+					<p>Olá <strong>${user.nome_completo}</strong>,</p>
+					<p>Notamos que você ainda não respondeu ao seu questionário semanal.</p>
+					<p>A semana já está quase terminando e sua participação é muito importante para acompanharmos seu progresso e bem-estar.</p>
+					<p>Reserve alguns minutinhos e complete o questionário antes do fim da semana.</p>
+					<a href="https://app.claraconecta.com.br" class="button">Responder agora</a>
+					<p>
+						Se você já respondeu e este e-mail foi enviado por engano, pode ignorá-lo.
+					</p>
+				`,
+				title: 'Notificação de Questionário Pendente'
+			});
+			await new Promise(resolve => setTimeout(resolve, 1000));
+		}
     }
 }
 
