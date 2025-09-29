@@ -32,8 +32,8 @@ class JobNotificacaoQuestionarioPendente extends Task {
 				subject: 'Notificação de Questionário Pendente',
 				html: `
 					<p>Olá <strong>${user.nome_completo}</strong>,</p>
-					<p>Notamos que você ainda não respondeu ao seu questionário semanal.</p>
-					<p>A semana já está quase terminando e sua participação é muito importante para acompanharmos seu progresso e bem-estar.</p>
+					<p>A semana já está na metade e notamos que você ainda não respondeu ao questionário semanal.</p>
+					<p>Sua participação é muito importante para acompanharmos seu progresso e bem-estar.</p>
 					<p>Reserve alguns minutinhos e complete o questionário antes do fim da semana.</p>
 					<a href="https://app.claraconecta.com.br" class="button">Responder agora</a>
 					<p>
