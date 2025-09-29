@@ -42,8 +42,8 @@ class AuthService {
             const tokenData = this.prepareTokenData(usuario, userPerm)
             const tokenInfo = TokenService.createToken(tokenData)
 
-            // Store token in local in-memory list
-            TokenStore.add(tokenInfo.token)
+            // Store token with user id (uid) in local in-memory list
+            TokenStore.add(tokenInfo.token, usuario.uid)
 
             // Prepare and return response
             return this.prepareLoginResponse(usuario, userPerm, filiaisFormatadas, tokenInfo, authData)

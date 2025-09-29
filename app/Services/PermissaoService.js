@@ -1,6 +1,7 @@
 'use strict'
 
 const PermissaoRepository = require('../Repositories/PermissaoRepository')
+const TokenStore = require('./tokens/TokenStore');
 
 class PermissaoService {
     constructor() {
@@ -39,6 +40,7 @@ class PermissaoService {
                 }))
 
                 await this.repository.insertUserPermissions(permissoesParaInserir)
+                TokenStore.removeByUserId(uid);
             } else {
                 console.log(`[DEBUG] Nenhuma permissão nova para inserir`)
             }
@@ -61,6 +63,7 @@ class PermissaoService {
 
         const permissions = this.representativeTypes[representativeType]
         await this.addPermissionsToUser(userId, uid, permissions)
+        // Token será removido pelo método addPermissionsToUser se houver mudanças
     }
 
     /**
@@ -83,6 +86,12 @@ class PermissaoService {
     async removePermissionsFromUser(userId, permissionIds) {
         try {
             await this.repository.removeUserPermissions(userId, permissionIds)
+            
+            // Buscar UID do usuário para remover tokens
+            const uid = await this.repository.getUserUid(userId)
+            if (uid) {
+                TokenStore.removeByUserId(uid);
+            }
         } catch (error) {
             console.error(`Erro ao remover permissões do usuário ${userId}:`, error.message)
             throw new Error(`Erro ao remover permissões: ${error.message}`)
@@ -143,6 +152,7 @@ class PermissaoService {
 
             if (permissionsToActuallyRemove.length > 0) {
                 await this.removePermissionsFromUser(userId, permissionsToActuallyRemove)
+                // Token será removido pelo método removePermissionsFromUser
             } else {
                 console.log(`[DEBUG] Nenhuma permissão removida para usuário ${userId} - todas são necessárias para outros tipos`)
             }
@@ -205,6 +215,7 @@ class PermissaoService {
     async managePermissionsAfterRepresentativeRemoval(userId, representativeType) {
         try {
             await this.removeRepresentativePermissions(userId, representativeType)
+            // Token será removido pelos métodos internos se houver mudanças
         } catch (error) {
             console.error(`Erro ao gerenciar permissões após remoção de ${representativeType} para usuário ${userId}:`, error.message)
             throw new Error(`Erro ao gerenciar permissões: ${error.message}`)
@@ -219,6 +230,7 @@ class PermissaoService {
     async createClientePermissions(userId, uid) {
         const permissoesCliente = [1, 2, 3, 4, 5, 6, 9]
         await this.addPermissionsToUser(userId, uid, permissoesCliente)
+        // Token será removido pelo método addPermissionsToUser se houver mudanças
     }
 
     /**

@@ -140,6 +140,26 @@ class PermissaoRepository {
         if (error) throw new Error(error.message)
         return data || []
     }
+
+    /**
+     * Busca o UID do usuário pelo seu ID
+     * @param {number} userId - ID do usuário
+     * @returns {Promise<string>} UID do usuário
+     */
+    async getUserUid(userId) {
+        const { data, error } = await this.supabase
+            .from('usuarios')
+            .select('uid')
+            .eq('id', userId)
+            .single()
+
+        if (error) {
+            console.error('Erro ao buscar UID do usuário:', error.message)
+            throw new Error(`Erro ao buscar UID do usuário: ${error.message}`)
+        }
+
+        return data?.uid
+    }
 }
 
 module.exports = PermissaoRepository
