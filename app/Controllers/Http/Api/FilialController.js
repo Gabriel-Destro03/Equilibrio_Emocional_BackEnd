@@ -10,9 +10,11 @@ class FilialController {
     /**
      * Lista todas as filiais ativas
      */
-    async index({ response }) {
+    async index({ request, response }) {
         try {
-            const filiais = await this.service.getAllFiliais()
+            const empresaId = request.user.empresa_id
+
+            const filiais = await this.service.getFiliaisByEmpresaId(empresaId)
             return response.status(200).json(filiais)
         } catch (error) {
             return response.status(400).json({ error: error.message })
