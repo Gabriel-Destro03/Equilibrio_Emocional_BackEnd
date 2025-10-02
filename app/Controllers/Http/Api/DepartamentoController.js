@@ -10,9 +10,11 @@ class DepartamentoController {
     /**
      * Lista todos os departamentos ativos
      */
-    async index({ response }) {
+    async index({ request, response }) {
         try {
-            const departamentos = await this.service.getAllDepartamentos()
+            const empresaId = request.user.empresa_id
+
+            var departamentos = await this.service.getByEmpresaId(empresaId)
             return response.status(200).json(departamentos)
         } catch (error) {
             return response.status(400).json({ error: error.message })
