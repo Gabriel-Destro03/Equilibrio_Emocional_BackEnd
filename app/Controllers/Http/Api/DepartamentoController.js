@@ -1,10 +1,19 @@
 'use strict'
 
 const DepartamentoService = require('../../../Services/DepartamentoService')
+const EmpresaDepartamentoFacade = require('../../../Facades/EmpresaDepartamentoFacade')
+const FilialService = require('../../../Services/FilialService')
+const EmpresaService = require('../../../Services/EmpresaService')
 
 class DepartamentoController {
     constructor() {
         this.service = new DepartamentoService()
+        this.facade = new EmpresaDepartamentoFacade()
+        
+        // Inicializa o facade com os services necessários
+        const empresaService = new EmpresaService()
+        const filialService = new FilialService()
+        this.facade.initializeServices(empresaService, this.service, filialService)
     }
 
     /**
@@ -58,14 +67,22 @@ class DepartamentoController {
     }
 
     /**
-     * Cria um novo departamento
+     * Cria um novo departamento com validação usando Facade
      */
     async store({ request, response }) {
         try {
             const departamentoData = request.only(['nome_departamento', 'id_filial'])
+            const empresaId = request.user?.empresa_id
 
-            const departamento = await this.service.createDepartamento(departamentoData)
-            return response.status(201).json(departamento)
+            if (empresaId) {
+                // Usa o Facade para criar departamento com validação completa
+                const departamento = await this.facade.criarDepartamentoComValidacao(departamentoData, empresaId)
+                return response.status(201).json(departamento)
+            } else {
+                // Fallback para o método tradicional se não houver empresa_id
+                const departamento = await this.service.createDepartamento(departamentoData)
+                return response.status(201).json(departamento)
+            }
         } catch (error) {
             return response.status(400).json({ error: error.message })
         }
@@ -121,6 +138,30 @@ class DepartamentoController {
         try {
             const departamentos = await this.service.getDepartamentosByUserId(params.uid)
             return response.status(200).json(departamentos)
+        } catch (error) {
+            return response.status(400).json({ error: error.message })
+        }
+    }
+
+    /**
+     * Busca departamentos de uma empresa com informações detalhadas usando Facade
+     */
+    async getDepartamentosByEmpresaWithDetails({ params, response }) {
+        try {
+            const departamentos = await this.facade.getDepartamentosByEmpresaWithDetails(params.empresaId)
+            return response.status(200).json(departamentos)
+        } catch (error) {
+            return response.status(400).json({ error: error.message })
+        }
+    }
+
+    /**
+     * Valida estrutura completa de uma empresa usando Facade
+     */
+    async validarEstruturaEmpresa({ params, response }) {
+        try {
+            const estrutura = await this.facade.validarEstruturaEmpresa(params.empresaId)
+            return response.status(200).json(estrutura)
         } catch (error) {
             return response.status(400).json({ error: error.message })
         }

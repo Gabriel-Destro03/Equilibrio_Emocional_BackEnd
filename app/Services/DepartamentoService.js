@@ -2,13 +2,37 @@
 
 const DepartamentoRepository = require('../Repositories/DepartamentoRepository')
 const FilialService = require('./FilialService')
+const IDepartamentoService = require('../Interfaces/IDepartamentoService')
 
-class DepartamentoService {
+class DepartamentoService extends IDepartamentoService {
     constructor() {
+        super()
         this.repository = new DepartamentoRepository()
         this.filialService = new FilialService()
     }
 
+    // Implementação dos métodos da interface IService
+    async getAll() {
+        return this.getAllDepartamentos()
+    }
+
+    async getById(id) {
+        return this.getDepartamentoById(id)
+    }
+
+    async create(data) {
+        return this.createDepartamento(data)
+    }
+
+    async update(id, data) {
+        return this.updateDepartamento(id, data)
+    }
+
+    async inactivate(id) {
+        return this.inactivateDepartamento(id)
+    }
+
+    // Métodos específicos mantidos para compatibilidade
     async getAllDepartamentos() {
         try {
             return await this.repository.getAllDepartamentos()
@@ -64,16 +88,13 @@ class DepartamentoService {
 
     
     async createDepartamento(departamentoData) {
-        const { nome_departamento, id_filial } = departamentoData
-
-        if (!nome_departamento || !id_filial) {
-            throw new Error('Nome do departamento e ID da filial são obrigatórios')
-        }
+        // Usa o método de validação da interface
+        await this.validateDepartamentoData(departamentoData, false)
 
         try {
             return await this.repository.createDepartamento({
-                nome_departamento,
-                id_filial
+                nome_departamento: departamentoData.nome_departamento,
+                id_filial: departamentoData.id_filial
             })
         } catch (error) {
             throw new Error(`Erro ao criar departamento: ${error.message}`)
@@ -85,13 +106,10 @@ class DepartamentoService {
             throw new Error('ID do departamento é obrigatório')
         }
 
-        const { nome_departamento, filial_id } = departamentoData
-
-        if (!nome_departamento && !filial_id) {
-            throw new Error('Pelo menos um campo deve ser fornecido para atualização')
-        }
-
         try {
+            // Usa o método de validação da interface
+            await this.validateDepartamentoData(departamentoData, true)
+
             const departamento = await this.repository.getDepartamentoById(id)
             if (!departamento) {
                 throw new Error('Departamento não encontrado')
@@ -146,6 +164,41 @@ class DepartamentoService {
             return await this.repository.getDepartamentosByUserId(uid)
         } catch (error) {
             throw new Error(`Erro ao buscar departamentos do usuário: ${error.message}`)
+        }
+    }
+
+    // Implementações dos métodos da interface IDepartamentoService
+    async validateDepartamentoData(departamentoData, isUpdate = false) {
+        if (!isUpdate) {
+            const { nome_departamento, id_filial } = departamentoData
+
+            if (!nome_departamento || !id_filial) {
+                throw new Error('Nome do departamento e ID da filial são obrigatórios')
+            }
+        } else {
+            const { nome_departamento, filial_id } = departamentoData
+
+            if (!nome_departamento && !filial_id) {
+                throw new Error('Pelo menos um campo deve ser fornecido para atualização')
+            }
+        }
+    }
+
+    async validateFilialBelongsToEmpresa(filialId, empresaId) {
+        try {
+            const filiais = await this.filialService.getFiliaisByEmpresaId(empresaId)
+            return filiais.some(filial => filial.id === Number(filialId))
+        } catch (error) {
+            throw new Error(`Erro ao validar se filial pertence à empresa: ${error.message}`)
+        }
+    }
+
+    // Método adicional para o Facade
+    async getDepartamentosByFiliaisId(filiaisId) {
+        try {
+            return await this.repository.getDepartamentosByFiliaisId(filiaisId)
+        } catch (error) {
+            throw new Error(`Erro ao buscar departamentos por filiais: ${error.message}`)
         }
     }
 }
