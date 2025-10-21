@@ -17,15 +17,38 @@ const crypto = require('crypto')
 
 const ValidationHelper = require('../Helpers/ValidationHelper')
 const PermissoesHelper = require('../Helpers/PermissoesHelper')
+const IUsuarioService = require('../Interfaces/IUsuarioService')
 
-class UsuarioService {
+class UsuarioService extends IUsuarioService {
     constructor() {
+        super()
         this.repository = new UsuarioRepository()
         this.usuarioRepository = new UserRepository()
         this.usuarioFilialRepository = new UsuarioFilialRepository()
         this.filiaisRepository = new FiliaisRepository()
         this.departamentoRepository = new DepartamentoRepository()
         this.usuarioDepartamentoRepository = new UsuarioDepartamentoRepository()
+    }
+
+    // Implementação dos métodos da interface IService
+    async getAll() {
+        return this.getAllUsuarios()
+    }
+
+    async getById(id) {
+        return this.getUsuarioById(id)
+    }
+
+    async create(data) {
+        return this.createUsuario(data)
+    }
+
+    async update(id, data) {
+        return this.updateUsuario(id, data)
+    }
+
+    async inactivate(id) {
+        return this.inactivateUsuario(id, false)
     }
 
     // =============================
@@ -171,54 +194,40 @@ class UsuarioService {
     // =============================
 
     async createUsuario(data) {
-        const { nome_completo, email, telefone, cargo, id_filial, id_departamento, empresa_id } = data
-
-        ValidationHelper.requireField(nome_completo, 'Nome completo é obrigatório')
-        ValidationHelper.requireField(email, 'Email é obrigatório')
-        ValidationHelper.requireField(cargo, 'Cargo é obrigatório')
-        ValidationHelper.ValidateEmail(email)
-        ValidationHelper.ValidateTelefone(telefone)
+        // Usa o método de validação da interface
+        await this.validateUsuarioData(data, false)
 
         try {
-            const usuarioExistente = await this.repository.getUsuarioByEmail(email)
-            if (usuarioExistente) throw new Error('Já existe um usuário com este email')
-
-            const password = PasswordGenerator.generatePassword()
+            const password = await this.generateTemporaryPassword(data)
 
             const usuario = await this.repository.createUsuario({
-                nome_completo,
-                email,
-                telefone,
-                cargo,
+                nome_completo: data.nome_completo,
+                email: data.email,
+                telefone: data.telefone,
+                cargo: data.cargo,
                 uid: password,
-                empresa_id,
-                id_filial,
-                id_departamento
+                empresa_id: data.empresa_id,
+                id_filial: data.id_filial,
+                id_departamento: data.id_departamento
             })
 
             if (!usuario) throw new Error('Erro ao criar usuário: Dados não retornados')
 
-            const code = crypto.randomBytes(4).toString('hex').toUpperCase()
-            const token = TokenService.createToken({
-                uid: usuario.uid,
-                type: 'email_activation',
-                code,
-                status: true,
-                expira_em: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
-            }).token
+            // Usa o método da interface para criar token
+            const tokenData = await this.createActivationToken(usuario)
 
             await this.usuarioRepository.saveUserAction({
                 uid: password,
                 type: 'email_activation',
-                code,
+                code: tokenData.code,
                 status: true,
-                expira_em: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-                token
+                expira_em: tokenData.expira_em,
+                token: tokenData.token
             })
 
-            const resetLink = `${process.env.VITE_URL_FRONT}/codigo?token=${token}`
+            const resetLink = `${process.env.VITE_URL_FRONT}/codigo?token=${tokenData.token}`
             try {
-                await SendEmail.sendWelcomeEmail(email, resetLink, code)
+                await this.sendWelcomeEmail(data.email, resetLink, tokenData.code)
             } catch (err) {
                 console.error('Erro ao enviar email de boas-vindas:', err)
             }
@@ -232,22 +241,17 @@ class UsuarioService {
     async updateUsuario(id, data) {
         ValidationHelper.requireField(id, 'ID do usuário é obrigatório')
 
-        const { nome_completo, email, telefone, cargo } = data
-        if (!nome_completo && !email && !telefone && !cargo) {
+        // Verifica se pelo menos um campo foi fornecido para atualização
+        if (data && Object.keys(data).length === 0) {
             throw new Error('Pelo menos um campo deve ser fornecido para atualização')
         }
 
-        if (email) ValidationHelper.ValidateEmail(email)
-        if (telefone) ValidationHelper.ValidateTelefone(telefone)
-
         try {
+            // Usa o método de validação da interface
+            await this.validateUsuarioData(data, true)
+
             const usuario = await this.repository.getUsuarioById(id)
             if (!usuario) throw new Error('Usuário não encontrado')
-
-            if (email && email !== usuario.email) {
-                const usuarioExistente = await this.repository.getUsuarioByEmail(email)
-                if (usuarioExistente) throw new Error('Já existe um usuário com este email')
-            }
 
             return await this.repository.updateUsuario(id, data)
         } catch (error) {
@@ -302,6 +306,79 @@ class UsuarioService {
             return await this.repository.getUsuariosByFilial(uid, isAdm, isFilial, isDepartamento)
         } catch (error) {
             throw new Error(`Erro ao buscar usuários da filial: ${error.message}`)
+        }
+    }
+
+    // Implementações dos métodos da interface IUsuarioService
+    async getByUid(uid) {
+        return this.getUsuarioByUid(uid)
+    }
+
+    async getByEmail(email) {
+        return this.getUsuarioByEmail(email)
+    }
+
+    async getUsuariosByEmpresa(request) {
+        return this.getUsuarioByEmpresaId(request)
+    }
+
+    async validateUsuarioData(usuarioData, isUpdate = false) {
+        // Verifica se usuarioData foi fornecido
+        if (!usuarioData) {
+            throw new Error('Dados do usuário são obrigatórios')
+        }
+
+        if (!isUpdate) {
+            ValidationHelper.requireField(usuarioData.nome_completo, 'Nome completo é obrigatório')
+            ValidationHelper.requireField(usuarioData.email, 'Email é obrigatório')
+            ValidationHelper.requireField(usuarioData.cargo, 'Cargo é obrigatório')
+        }
+
+        // Validação de campos opcionais apenas se fornecidos
+        if (usuarioData.email && usuarioData.email.trim()) {
+            ValidationHelper.validateEmail(usuarioData.email)
+        }
+
+        if (usuarioData.telefone && usuarioData.telefone.trim()) {
+            ValidationHelper.validateTelefone(usuarioData.telefone)
+        }
+
+        // Verifica se email já existe (apenas para criação)
+        if (usuarioData.email && !isUpdate) {
+            const usuarioExistente = await this.repository.getUsuarioByEmail(usuarioData.email)
+            if (usuarioExistente) {
+                throw new Error('Já existe um usuário com este email')
+            }
+        }
+    }
+
+    async generateTemporaryPassword(usuarioData) {
+        return PasswordGenerator.generatePassword()
+    }
+
+    async sendWelcomeEmail(email, resetLink, code) {
+        try {
+            await SendEmail.sendWelcomeEmail(email, resetLink, code)
+        } catch (error) {
+            console.error('Erro ao enviar email de boas-vindas:', error)
+            throw new Error('Erro ao enviar email de boas-vindas')
+        }
+    }
+
+    async createActivationToken(usuarioData) {
+        const code = crypto.randomBytes(4).toString('hex').toUpperCase()
+        const token = TokenService.createToken({
+            uid: usuarioData.uid,
+            type: 'email_activation',
+            code,
+            status: true,
+            expira_em: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+        }).token
+
+        return {
+            code,
+            token,
+            expira_em: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
         }
     }
 }

@@ -15,6 +15,20 @@ class ValidationHelper {
         if (!value) throw new Error(message)
     }
 
+    // 🔹 Valida e lança erro se email inválido
+    static validateEmail(email) {
+        if (!this.isValidEmail(email)) {
+            throw new Error('Formato de email inválido')
+        }
+    }
+
+    // 🔹 Valida e lança erro se telefone inválido
+    static validateTelefone(telefone) {
+        if (!this.isValidTelefone(telefone)) {
+            throw new Error('Formato de telefone inválido')
+        }
+    }
+
 }
 
 module.exports = ValidationHelper

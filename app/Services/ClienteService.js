@@ -7,16 +7,44 @@ const EmpresaRepository = require('../Repositories/EmpresaRepository')
 const SendEmail = require('./Emails/SendEmail')
 const PasswordGenerator = require('../Utils/PasswordGenerator')
 const crypto = require('crypto')
+const IClienteService = require('../Interfaces/IClienteService')
 
 /**
  * Serviço responsável pela lógica de negócios relacionada aos clientes
  */
-class ClienteService {
+class ClienteService extends IClienteService {
     constructor() {
+        super()
         this.repository = new ClienteRepository()
         this.empresaRepository = new EmpresaRepository()
         this.usuarioService = new UsuarioService()
         this.empresaService = new EmpresaService()
+    }
+
+    // Implementação dos métodos da interface IService
+    async getAll() {
+        return this.getAllClientes()
+    }
+
+    async getById(id) {
+        return this.getClienteById(id)
+    }
+
+    async create(data) {
+        return this.createCliente(data)
+    }
+
+    async update(id, data) {
+        return this.updateCliente(id, data)
+    }
+
+    async inactivate(id) {
+        return this.deleteCliente(id)
+    }
+
+    async changeStatus(id, newStatus) {
+        // Para clientes, mudança de status é feita via inactivate
+        return this.inactivate(id)
     }
 
     /**
@@ -63,29 +91,8 @@ class ClienteService {
      * @throws {Error} Erro ao criar cliente
      */
     async createCliente(clienteData) {
-        const { usuario, empresa } = clienteData
-
-        // Validações básicas
-        if (!usuario || !empresa) {
-            throw new Error('Dados do usuário e empresa são obrigatórios')
-        }
-
-        if (!usuario.nome || !usuario.email || !usuario.telefone || !usuario.cargo) {
-            throw new Error('Dados obrigatórios do usuário: nome, email, telefone e cargo')
-        }
-
-        if (!empresa.razaoSocial || !empresa.cnpj) {
-            throw new Error('Dados obrigatórios da empresa: razaoSocial e cnpj')
-        }
-
-        // Validação de senha (opcional para clientes)
-        if (usuario.senha && usuario.confirmarSenha && usuario.senha !== usuario.confirmarSenha) {
-            throw new Error('As senhas não coincidem')
-        }
-
-        if (usuario.senha && usuario.senha.length < 6) {
-            throw new Error('A senha deve ter pelo menos 6 caracteres')
-        }
+        // Usa o método de validação da interface
+        await this.validateClienteData(clienteData, false)
 
         try {
             // 1. Verificar se o cliente já existe
@@ -255,6 +262,121 @@ class ClienteService {
 
         } catch (error) {
             throw new Error(`Erro ao remover cliente: ${error.message}`)
+        }
+    }
+
+    // Implementações dos métodos da interface IClienteService
+    async validateClienteData(clienteData, isUpdate = false) {
+        const { usuario, empresa } = clienteData
+
+        // Validações básicas
+        if (!usuario || !empresa) {
+            throw new Error('Dados do usuário e empresa são obrigatórios')
+        }
+
+        if (!isUpdate) {
+            if (!usuario.nome || !usuario.email || !usuario.telefone || !usuario.cargo) {
+                throw new Error('Dados obrigatórios do usuário: nome, email, telefone e cargo')
+            }
+
+            if (!empresa.razaoSocial || !empresa.cnpj) {
+                throw new Error('Dados obrigatórios da empresa: razaoSocial e cnpj')
+            }
+        }
+
+        // Validação de senha (opcional para clientes)
+        if (usuario.senha && usuario.confirmarSenha && usuario.senha !== usuario.confirmarSenha) {
+            throw new Error('As senhas não coincidem')
+        }
+
+        if (usuario.senha && usuario.senha.length < 6) {
+            throw new Error('A senha deve ter pelo menos 6 caracteres')
+        }
+    }
+
+    async clienteExistsByEmail(email) {
+        try {
+            return await this.repository.clienteExistsByEmail(email)
+        } catch (error) {
+            throw new Error(`Erro ao verificar se cliente existe: ${error.message}`)
+        }
+    }
+
+    async empresaExistsByCnpj(cnpj) {
+        try {
+            return await this.repository.empresaExistsByCnpj(cnpj)
+        } catch (error) {
+            throw new Error(`Erro ao verificar se empresa existe: ${error.message}`)
+        }
+    }
+
+    async createEmpresaForCliente(empresaData) {
+        try {
+            return await this.repository.createEmpresa(empresaData)
+        } catch (error) {
+            throw new Error(`Erro ao criar empresa: ${error.message}`)
+        }
+    }
+
+    async createAuthUserForCliente(email, password) {
+        try {
+            return await this.repository.createAuthUser(email, password)
+        } catch (error) {
+            throw new Error(`Erro ao criar usuário de autenticação: ${error.message}`)
+        }
+    }
+
+    async createUsuarioForCliente(usuarioData) {
+        try {
+            return await this.repository.createUsuario(usuarioData)
+        } catch (error) {
+            throw new Error(`Erro ao criar usuário: ${error.message}`)
+        }
+    }
+
+    async createRepresentanteForCliente(usuarioId, usuarioUid, empresaId) {
+        try {
+            await this.empresaRepository.criarRepresentante([{
+                usuario_id: usuarioId,
+                usuario_uid: usuarioUid,
+                empresa_id: empresaId
+            }])
+        } catch (error) {
+            throw new Error(`Erro ao criar representante: ${error.message}`)
+        }
+    }
+
+    async sendAccessCodeToCliente(email, nome, codigo) {
+        try {
+            await SendEmail.sendCodigoClienteEmail(email, nome, codigo)
+        } catch (error) {
+            throw new Error(`Erro ao enviar código de acesso: ${error.message}`)
+        }
+    }
+
+    async createPermissaoForCliente(usuarioId, usuarioUid) {
+        try {
+            await this.repository.createPermissaoCliente(usuarioId, usuarioUid)
+        } catch (error) {
+            throw new Error(`Erro ao criar permissões: ${error.message}`)
+        }
+    }
+
+    async updateClienteUsuario(clienteId, usuarioData) {
+        try {
+            const cliente = await this.getClienteById(clienteId)
+            return await this.usuarioService.updateUsuario(cliente.usuario.id, usuarioData)
+        } catch (error) {
+            throw new Error(`Erro ao atualizar usuário do cliente: ${error.message}`)
+        }
+    }
+
+    async updateClienteEmpresa(clienteId, empresaData) {
+        try {
+            const cliente = await this.getClienteById(clienteId)
+            return await this.empresaService.updateEmpresa(cliente.empresa.id, empresaData)
+        } catch (error) {
+            throw new Error(`Erro ao atualizar empresa do cliente: ${error.message}`)
         }
     }
 }

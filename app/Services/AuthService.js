@@ -9,9 +9,11 @@ const UserRepository = require('../Repositories/UserRepository')
 const SendEmail = require('./Emails/SendEmail')
 const { createClient } = require('@supabase/supabase-js')
 const crypto = require('crypto')
+const IAuthService = require('../Interfaces/IAuthService')
 
-class AuthService {
+class AuthService extends IAuthService {
     constructor() {
+        super()
         this.repository = new AuthRepository()
         this.userRepository = new UserRepository()
         this.usuarioRepository = new UsuarioRepository()

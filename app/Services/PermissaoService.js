@@ -1,10 +1,12 @@
 'use strict'
 
 const PermissaoRepository = require('../Repositories/PermissaoRepository')
-const TokenStore = require('./tokens/TokenStore');
+const TokenStore = require('./tokens/TokenStore')
+const IPermissaoService = require('../Interfaces/IPermissaoService')
 
-class PermissaoService {
+class PermissaoService extends IPermissaoService {
     constructor() {
+        super()
         this.repository = new PermissaoRepository()
         
         // Tipos de representante e suas permissões
@@ -13,6 +15,37 @@ class PermissaoService {
             'rep_filial': [1, 3, 4, 5],
             'rep_empresa': [1, 2, 3, 4, 9]
         }
+    }
+
+    // Implementação dos métodos básicos da interface IService
+    async getAll() {
+        // Permissões não têm um método getAll padrão, retorna array vazio
+        return []
+    }
+
+    async getById(id) {
+        // Permissões não têm um método getById padrão
+        throw new Error('Método getById não implementado para PermissaoService')
+    }
+
+    async create(data) {
+        // Permissões não são criadas diretamente, são gerenciadas via outros métodos
+        throw new Error('Método create não implementado para PermissaoService')
+    }
+
+    async update(id, data) {
+        // Permissões não são atualizadas diretamente, são gerenciadas via outros métodos
+        throw new Error('Método update não implementado para PermissaoService')
+    }
+
+    async inactivate(id) {
+        // Permissões não são inativadas diretamente, são removidas via outros métodos
+        throw new Error('Método inactivate não implementado para PermissaoService')
+    }
+
+    async changeStatus(id, newStatus) {
+        // Permissões não mudam status diretamente
+        throw new Error('Método changeStatus não implementado para PermissaoService')
     }
 
     /**
