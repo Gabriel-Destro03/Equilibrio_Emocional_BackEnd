@@ -58,7 +58,6 @@ class AvaliacaoTemaFacade {
                                                resultadoN8n.n8n_executado !== false
                 
                 if (!atualizacaoBemSucedida) {
-                    console.log('Atualização via n8n falhou, buscando último relatório disponível')
                     
                     // Busca o último relatório disponível (sem filtro de data)
                     const ultimoRelatorio = await this.avaliacaoTemaService.getAvaliacoesTemasByDepartamentoId(departamentoId)
@@ -109,13 +108,11 @@ class AvaliacaoTemaFacade {
                                                    resultadoN8n.n8n_executado !== false
                     
                     if (!atualizacaoBemSucedida) {
-                        console.log('Atualização via n8n falhou, buscando último relatório disponível')
                         
                         // Busca o último relatório disponível (sem filtro de data)
                         const ultimoRelatorio = await this.avaliacaoTemaService.getAvaliacoesTemasByDepartamentoId(departamentoId)
                         
                         if (ultimoRelatorio && ultimoRelatorio.length > 0) {
-                            console.log(`Retornando último relatório disponível com ${ultimoRelatorio.length} avaliações`)
                             avaliacoes = ultimoRelatorio
                         }
                     }
@@ -243,7 +240,6 @@ class AvaliacaoTemaFacade {
         this._validateServices()
 
         try {
-            console.log(`Forçando atualização via n8n para departamento ${departamentoId}`)
             
             const resultado = await this.n8nClient.forcarAtualizacaoAvaliacoesTemas(departamentoId)
             

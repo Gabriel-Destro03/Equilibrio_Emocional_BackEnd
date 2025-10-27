@@ -18,17 +18,11 @@ class AvaliacaoEmocionalService {
     async processarAvaliacao(jornadaData) {
         try {
             // Debug: Log do formato das respostas antes de formatar
-            console.log('=== DEBUG: jornadaData.respostas ===')
-            console.log('Tipo:', typeof jornadaData.respostas)
-            console.log('É Array?', Array.isArray(jornadaData.respostas))
-            console.log('Conteúdo:', JSON.stringify(jornadaData.respostas, null, 2))
             
             // Formata as respostas
             const formattedAnswers = await this.formatarRespostas(jornadaData.respostas)
             
             // Debug: Log do formato das respostas após formatar
-            console.log('=== DEBUG: answers formatadas ===')
-            console.log('Conteúdo:', JSON.stringify(formattedAnswers, null, 2))
             
             // Prepara os dados para o N8n
             const analiseInput = {
@@ -41,8 +35,6 @@ class AvaliacaoEmocionalService {
             }
             
             // Debug: Log completo do que será enviado ao N8n
-            console.log('=== DEBUG: Payload completo para N8n ===')
-            console.log(JSON.stringify(analiseInput, null, 2))
 
             // Primeiro, envia para análise no N8n e aguarda o retorno
             const resultadoAnalise = await this.n8nClient.sendAnaliseFeedback(analiseInput)

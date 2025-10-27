@@ -62,8 +62,6 @@ class N8nClient {
             }
             
             // Debug: Log do que está sendo enviado ao N8n
-            console.log('=== DEBUG: Body sendo enviado ao N8n ===')
-            console.log(JSON.stringify(bodyData, null, 2))
             
             const body = JSON.stringify(bodyData)
             
@@ -128,13 +126,10 @@ class N8nClient {
      */
     async atualizarAvaliacoesTemasPorDepartamento(departamentoId, avaliacoes = []) {
         try {
-            console.log(`Iniciando atualização de avaliações de temas via n8n para departamento ${departamentoId}`)
-            console.log(`Encontradas ${avaliacoes.length} avaliações com mais de 5 dias`)
 
             // Chama a integração n8n existente
             const resultadoN8n = await this.atualizarAvaliacoesPorDepartamento(departamentoId)
             
-            console.log(`Atualização via n8n concluída para departamento ${departamentoId}:`, resultadoN8n)
 
             return resultadoN8n
         } catch (error) {
@@ -164,11 +159,8 @@ class N8nClient {
      */
     async forcarAtualizacaoAvaliacoesTemas(departamentoId) {
         try {
-            console.log(`Forçando atualização de avaliações de temas via n8n para departamento ${departamentoId}`)
             
             const resultadoN8n = await this.atualizarAvaliacoesPorDepartamento(departamentoId)
-            
-            console.log(`Atualização forçada via n8n concluída para departamento ${departamentoId}:`, resultadoN8n)
             
             return {
                 departamento_id: departamentoId,

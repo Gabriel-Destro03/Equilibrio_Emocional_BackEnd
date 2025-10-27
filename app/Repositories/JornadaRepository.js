@@ -57,10 +57,6 @@ class JornadaRepository {
             // Formata para ISO
             const inicioSemanaISO = inicioSemana.toISOString()
             
-            console.log('=== DEBUG: Verificando jornada da semana ===')
-            console.log('UID:', uid)
-            console.log('Início da semana:', inicioSemanaISO)
-            
             const { data, error } = await this.supabase
                 .from('jornada')
                 .select('id, created_at, emocao, reflexao')
@@ -72,8 +68,6 @@ class JornadaRepository {
                 console.error('Erro ao verificar jornada da semana:', error)
                 throw new Error(error.message)
             }
-            
-            console.log('Jornadas encontradas nesta semana:', data?.length || 0)
             
             return {
                 jaRespondeu: data && data.length > 0,
@@ -179,8 +173,6 @@ class JornadaRepository {
             })
 
             // Debug: Log dos dados antes de inserir
-            console.log('=== DEBUG: Dados para inserir em jornada_respostas_duplicate ===')
-            console.log('Respostas recebidas:', JSON.stringify(respostas, null, 2))
             
             // Ajusta o nome da coluna para o banco (mantém id_perguntas plural)
             const respostasParaInserir = respostas.map(r => ({
@@ -189,16 +181,11 @@ class JornadaRepository {
                 id_resposta: r.id_resposta
             }))
             
-            console.log('Respostas formatadas para inserir:', JSON.stringify(respostasParaInserir, null, 2))
 
             const { data, error } = await this.supabase
                 .from('jornada_respostas_duplicate')
                 .insert(respostasParaInserir)
                 .select()
-                
-            console.log('=== DEBUG: Resultado da inserção ===')
-            console.log('Data retornada:', JSON.stringify(data, null, 2))
-            console.log('Erro:', error)
 
             if (error) {
                 console.error('Erro detalhado do Supabase ao criar respostas:', {
