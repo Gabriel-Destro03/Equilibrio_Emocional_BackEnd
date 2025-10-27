@@ -151,5 +151,57 @@ Route.group(() => {
      *         description: Jornada não encontrada
      */
     Route.put('/:id', 'Api/JornadaController.update')
+
+    /**
+     * @swagger
+     * /api/jornadas/verificar-semana:
+     *   post:
+     *     tags:
+     *       - Jornadas
+     *     summary: Verifica se o usuário já respondeu a jornada nesta semana
+     *     security:
+     *       - bearerAuth: []
+     *     parameters:
+     *       - name: body
+     *         in: body
+     *         required: true
+     *         schema:
+     *           type: object
+     *           required:
+     *             - uid
+     *           properties:
+     *             uid:
+     *               type: string
+     *               description: ID do usuário
+     *     responses:
+     *       200:
+     *         description: Verificação realizada com sucesso
+     *         schema:
+     *           type: object
+     *           properties:
+     *             jaRespondeu:
+     *               type: boolean
+     *               description: Indica se o usuário já respondeu nesta semana
+     *             totalBuscado:
+     *               type: integer
+     *               description: Total de jornadas encontradas nesta semana
+     *             ultimaJornada:
+     *               type: object
+     *               description: Dados da última jornada (se existir)
+     *               properties:
+     *                 id:
+     *                   type: integer
+     *                 created_at:
+     *                   type: string
+     *                 emocao:
+     *                   type: string
+     *                 reflexao:
+     *                   type: string
+     *       400:
+     *         description: Erro ao verificar jornada
+     *       401:
+     *         description: Não autorizado
+     */
+    Route.post('/verificar-semana', 'Api/JornadaController.verificarSemana')
 })
 .prefix('/api/jornadas')

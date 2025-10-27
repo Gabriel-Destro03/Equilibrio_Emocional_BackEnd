@@ -69,6 +69,24 @@ class JornadaController {
             return response.status(400).json({ error: error.message })
         }
     }
+
+    /**
+     * Verifica se o usuário já respondeu a jornada nesta semana
+     */
+    async verificarSemana({ request, response }) {
+        try {
+            const { uid } = request.only(['uid'])
+            
+            if (!uid) {
+                return response.status(400).json({ error: 'UID é obrigatório' })
+            }
+
+            const resultado = await this.service.verificarJornadaSemana(uid)
+            return response.status(200).json(resultado)
+        } catch (error) {
+            return response.status(400).json({ error: error.message })
+        }
+    }
 }
 
 module.exports = JornadaController 

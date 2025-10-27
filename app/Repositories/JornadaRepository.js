@@ -44,6 +44,48 @@ class JornadaRepository {
         return data
     }
 
+    async verificarJornadaSemana(uid) {
+        try {
+            // Calcula a data de início da semana (segunda-feira)
+            const hoje = new Date()
+            const diaSemana = hoje.getDay() // 0 = domingo, 1 = segunda, etc.
+            const diffDias = diaSemana === 0 ? 6 : diaSemana - 1 // Ajusta para segunda-feira
+            const inicioSemana = new Date(hoje)
+            inicioSemana.setDate(hoje.getDate() - diffDias)
+            inicioSemana.setHours(0, 0, 0, 0)
+            
+            // Formata para ISO
+            const inicioSemanaISO = inicioSemana.toISOString()
+            
+            console.log('=== DEBUG: Verificando jornada da semana ===')
+            console.log('UID:', uid)
+            console.log('Início da semana:', inicioSemanaISO)
+            
+            const { data, error } = await this.supabase
+                .from('jornada')
+                .select('id, created_at, emocao, reflexao')
+                .eq('uid', uid)
+                .gte('created_at', inicioSemanaISO)
+                .order('created_at', { ascending: false })
+            
+            if (error) {
+                console.error('Erro ao verificar jornada da semana:', error)
+                throw new Error(error.message)
+            }
+            
+            console.log('Jornadas encontradas nesta semana:', data?.length || 0)
+            
+            return {
+                jaRespondeu: data && data.length > 0,
+                totalBuscado: data?.length || 0,
+                ultimaJornada: data && data.length > 0 ? data[0] : null
+            }
+        } catch (error) {
+            console.error('Erro ao verificar jornada da semana:', error)
+            throw error
+        }
+    }
+
     async createJornada(jornadaData) {
         try {
             // Validação dos dados antes de inserir
@@ -128,7 +170,7 @@ class JornadaRepository {
                 if (!resposta.id_jornada) {
                     throw new Error(`Resposta ${index}: id_jornada é obrigatório`)
                 }
-                if (!resposta.id_perguntas) {
+                if (!resposta.id_pergunta) {
                     throw new Error(`Resposta ${index}: id_pergunta é obrigatório`)
                 }
                 if (!resposta.id_resposta) {
@@ -143,7 +185,7 @@ class JornadaRepository {
             // Ajusta o nome da coluna para o banco (mantém id_perguntas plural)
             const respostasParaInserir = respostas.map(r => ({
                 id_jornada: r.id_jornada,
-                id_perguntas: r.id_perguntas,  // Mantém plural conforme esperado
+                id_pergunta: r.id_pergunta,  // Mantém plural conforme esperado
                 id_resposta: r.id_resposta
             }))
             

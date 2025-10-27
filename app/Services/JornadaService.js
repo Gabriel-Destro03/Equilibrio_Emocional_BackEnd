@@ -41,6 +41,19 @@ class JornadaService {
         }
     }
 
+    async verificarJornadaSemana(uid) {
+        if (!uid) {
+            throw new Error('UID do usuário é obrigatório')
+        }
+
+        try {
+            return await this.repository.verificarJornadaSemana(uid)
+        } catch (error) {
+            console.error('Erro ao verificar jornada da semana:', error)
+            throw new Error(`Erro ao verificar jornada da semana: ${error.message}`)
+        }
+    }
+
     async formatarRespostasParaAnalise(jornadaRespostas) {
         // Busca todas as perguntas e respostas de uma vez
         const [todasPerguntas, todasRespostas] = await Promise.all([
@@ -97,7 +110,7 @@ class JornadaService {
 
                     return {
                         id_jornada: jornada.id,
-                        id_perguntas: resposta.id_pergunta,
+                        id_pergunta: resposta.id_pergunta,
                         id_resposta: resposta.id_resposta
                     }
                 })
