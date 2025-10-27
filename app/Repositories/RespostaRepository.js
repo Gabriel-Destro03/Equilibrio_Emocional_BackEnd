@@ -9,7 +9,7 @@ class RespostaRepository {
 
     async getAllRespostas() {
         const { data, error } = await this.supabase
-            .from('respostas')
+            .from('respostas_duplicate')
             .select('*')
             .eq('status', true)
 
@@ -19,7 +19,7 @@ class RespostaRepository {
 
     async getRespostaById(id) {
         const { data, error } = await this.supabase
-            .from('respostas')
+            .from('respostas_duplicate')
             .select('*')
             .eq('id', id)
             .eq('status', true)
@@ -31,7 +31,7 @@ class RespostaRepository {
 
     async getRespostasByPerguntaId(perguntaId) {
         const { data, error } = await this.supabase
-            .from('respostas')
+            .from('respostas_duplicate')
             .select('*')
             .eq('id_pergunta', perguntaId)
             .eq('status', true)
@@ -42,7 +42,7 @@ class RespostaRepository {
 
     async createResposta(respostaData) {
         const { data, error } = await this.supabase
-            .from('respostas')
+            .from('respostas_duplicate')
             .insert([{ ...respostaData, status: true }])
             .select()
             .single()
@@ -53,7 +53,7 @@ class RespostaRepository {
 
     async updateResposta(id, respostaData) {
         const { data, error } = await this.supabase
-            .from('respostas')
+            .from('respostas_duplicate')
             .update(respostaData)
             .eq('id', id)
             .select()
@@ -65,7 +65,7 @@ class RespostaRepository {
 
     async inactivateResposta(id) {
         const { data, error } = await this.supabase
-            .from('respostas')
+            .from('respostas_duplicate')
             .update({ status: false })
             .eq('id', id)
             .select()

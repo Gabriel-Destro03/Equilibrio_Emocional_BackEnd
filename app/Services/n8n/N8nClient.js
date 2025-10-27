@@ -51,8 +51,7 @@ class N8nClient {
      */
     async sendAnaliseFeedback(analiseInput) {
         try {
-            
-            const body = JSON.stringify({
+            const bodyData = {
                 userId: analiseInput.uid,
                 date: new Date(),
                 'emotion-check': 'Como você está se sentindo?',
@@ -60,7 +59,13 @@ class N8nClient {
                 'user-reflections': 'Faça um resumo de suas reflexões',
                 'user-reflectionsAnswer': analiseInput.reflexao,
                 answers: analiseInput.answers
-            })
+            }
+            
+            // Debug: Log do que está sendo enviado ao N8n
+            console.log('=== DEBUG: Body sendo enviado ao N8n ===')
+            console.log(JSON.stringify(bodyData, null, 2))
+            
+            const body = JSON.stringify(bodyData)
             
             const response = await fetch(this.n8nUrlIA, {
                 method: 'POST',

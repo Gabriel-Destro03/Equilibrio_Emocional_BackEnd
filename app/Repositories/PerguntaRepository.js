@@ -9,8 +9,8 @@ class PerguntaRepository {
 
     async getAllPerguntas() {
         const { data, error } = await this.supabase
-            .from('perguntas')
-            .select('*, respostas(*)')
+            .from('perguntas_duplicate')
+            .select('*, respostas_duplicate(*)')
             .eq('status', true)
 
         if (error) throw new Error(error.message)
@@ -19,8 +19,8 @@ class PerguntaRepository {
 
     async getPerguntaById(id) {
         const { data, error } = await this.supabase
-            .from('perguntas')
-            .select('*, respostas(*)')
+            .from('perguntas_duplicate')
+            .select('*, respostas_duplicate(*)')
             .eq('id', id)
             .eq('status', true)
             .single()
@@ -31,9 +31,9 @@ class PerguntaRepository {
 
     async createPergunta(perguntaData) {
         const { data, error } = await this.supabase
-            .from('perguntas')
+            .from('perguntas_duplicate')
             .insert([{ ...perguntaData, status: true }])
-            .select('*, respostas(*)')
+            .select('*, respostas_duplicate(*)')
             .single()
 
         if (error) throw new Error(error.message)
@@ -42,10 +42,10 @@ class PerguntaRepository {
 
     async updatePergunta(id, perguntaData) {
         const { data, error } = await this.supabase
-            .from('perguntas')
+            .from('perguntas_duplicate')
             .update(perguntaData)
             .eq('id', id)
-            .select('*, respostas(*)')
+            .select('*, respostas_duplicate(*)')
             .single()
 
         if (error) throw new Error(error.message)
@@ -54,10 +54,10 @@ class PerguntaRepository {
 
     async inactivatePergunta(id) {
         const { data, error } = await this.supabase
-            .from('perguntas')
+            .from('perguntas_duplicate')
             .update({ status: false })
             .eq('id', id)
-            .select('*, respostas(*)')
+            .select('*, respostas_duplicate(*)')
             .single()
 
         if (error) throw new Error(error.message)

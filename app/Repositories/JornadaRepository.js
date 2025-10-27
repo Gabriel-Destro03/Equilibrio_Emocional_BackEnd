@@ -15,7 +15,7 @@ class JornadaRepository {
             .from('jornada')
             .select(`
                 *,
-                jornada_respostas (
+                jornada_respostas_duplicate (
                     id,
                     id_perguntas,
                     id_resposta
@@ -31,7 +31,7 @@ class JornadaRepository {
             .from('jornada')
             .select(`
                 *,
-                jornada_respostas (
+                jornada_respostas_duplicate (
                     id,
                     id_perguntas,
                     id_resposta
@@ -136,17 +136,27 @@ class JornadaRepository {
                 }
             })
 
-            // Ajusta o nome da coluna para o banco
+            // Debug: Log dos dados antes de inserir
+            console.log('=== DEBUG: Dados para inserir em jornada_respostas_duplicate ===')
+            console.log('Respostas recebidas:', JSON.stringify(respostas, null, 2))
+            
+            // Ajusta o nome da coluna para o banco (mantém id_perguntas plural)
             const respostasParaInserir = respostas.map(r => ({
                 id_jornada: r.id_jornada,
-                id_pergunta: r.id_perguntas,
+                id_perguntas: r.id_perguntas,  // Mantém plural conforme esperado
                 id_resposta: r.id_resposta
             }))
+            
+            console.log('Respostas formatadas para inserir:', JSON.stringify(respostasParaInserir, null, 2))
 
             const { data, error } = await this.supabase
-                .from('jornada_respostas')
+                .from('jornada_respostas_duplicate')
                 .insert(respostasParaInserir)
                 .select()
+                
+            console.log('=== DEBUG: Resultado da inserção ===')
+            console.log('Data retornada:', JSON.stringify(data, null, 2))
+            console.log('Erro:', error)
 
             if (error) {
                 console.error('Erro detalhado do Supabase ao criar respostas:', {
@@ -177,7 +187,7 @@ class JornadaRepository {
             .eq('id', id)
             .select(`
                 *,
-                jornada_respostas (
+                jornada_respostas_duplicate (
                     id,
                     id_perguntas,
                     id_resposta
