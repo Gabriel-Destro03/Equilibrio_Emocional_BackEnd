@@ -188,6 +188,88 @@ class JornadaRepository {
         if (error) throw new Error(error.message)
         return data
     }
+
+    /**
+     * Busca comentários de jornadas por departamento
+     * Retorna emoção e reflexão dos questionários através da relação com avaliacoes_emocionais
+     * @param {number} departamentoId - ID do departamento
+     * @returns {Promise<Array>} Lista de comentários das jornadas
+     */
+    async getComentariosByDepartamentoId(departamentoId) {
+        const { data, error } = await this.supabase
+            .from('jornada')
+            .select(`
+                reflexaoGeneratedIA,
+                avaliacoes_emocionais!inner(
+                    id,
+                    departamento_id
+                )
+            `)
+            .eq('avaliacoes_emocionais.departamento_id', departamentoId)
+            .neq('reflexaoGeneratedIA', "")
+            .order('created_at', { ascending: false })
+
+        if (error) throw new Error(error.message)
+        return data
+    }
+
+    /**
+     * Busca comentários de jornadas por departamento com filtros adicionais
+     * @param {number} departamentoId - ID do departamento
+     * @param {Object} filtros - Filtros opcionais (data_inicio, data_fim, limit, offset)
+     * @returns {Promise<Array>} Lista de comentários filtrados
+     */
+    async getComentariosByDepartamentoIdComFiltros(departamentoId, filtros = {}) {
+        // Monta a query base
+        let query = this.supabase
+            .from('jornada')
+            .select(`
+                id,
+                emocao,
+                reflexao,
+                uid,
+                created_at,
+                avaliacoes_emocionais!inner(
+                    id,
+                    departamento_id
+                ),
+                usuario:usuarios(
+                    id,
+                    nome_completo,
+                    email,
+                    cargo
+                )
+            `)
+            .eq('avaliacoes_emocionais.departamento_id', departamentoId)
+
+        // Aplica filtro de data de início se fornecido
+        if (filtros.data_inicio) {
+            query = query.gte('created_at', filtros.data_inicio)
+        }
+
+        // Aplica filtro de data de fim se fornecido
+        if (filtros.data_fim) {
+            query = query.lte('created_at', filtros.data_fim)
+        }
+
+        // Ordena por data de criação (mais recente primeiro)
+        query = query.order('created_at', { ascending: false })
+
+        // Aplica limite se fornecido
+        if (filtros.limit) {
+            query = query.limit(filtros.limit)
+        }
+
+        // Aplica offset se fornecido
+        if (filtros.offset) {
+            query = query.range(filtros.offset, filtros.offset + (filtros.limit || 10) - 1)
+        }
+
+        const { data, error } = await query
+
+        if (error) throw new Error(error.message)
+        return data
+    }
 }
 
 module.exports = JornadaRepository 

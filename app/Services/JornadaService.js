@@ -154,6 +154,43 @@ class JornadaService {
             throw new Error(`Erro ao atualizar jornada: ${error.message}`)
         }
     }
+
+    /**
+     * Busca comentários de jornadas por departamento
+     * @param {number} departamentoId - ID do departamento
+     * @returns {Promise<Array>} Lista de comentários (emoção e reflexão) das jornadas
+     */
+    async getComentariosByDepartamentoId(departamentoId) {
+        if (!departamentoId) {
+            throw new Error('ID do departamento é obrigatório')
+        }
+
+        try {
+            return await this.repository.getComentariosByDepartamentoId(departamentoId)
+        } catch (error) {
+            console.error('Erro ao buscar comentários por departamento:', error)
+            throw new Error(`Erro ao buscar comentários por departamento: ${error.message}`)
+        }
+    }
+
+    /**
+     * Busca comentários de jornadas por departamento com filtros adicionais
+     * @param {number} departamentoId - ID do departamento
+     * @param {Object} filtros - Filtros opcionais (data_inicio, data_fim, limit, offset)
+     * @returns {Promise<Array>} Lista de comentários filtrados
+     */
+    async getComentariosByDepartamentoIdComFiltros(departamentoId, filtros = {}) {
+        if (!departamentoId) {
+            throw new Error('ID do departamento é obrigatório')
+        }
+
+        try {
+            return await this.repository.getComentariosByDepartamentoIdComFiltros(departamentoId, filtros)
+        } catch (error) {
+            console.error('Erro ao buscar comentários com filtros:', error)
+            throw new Error(`Erro ao buscar comentários com filtros: ${error.message}`)
+        }
+    }
 }
 
 module.exports = JornadaService 
