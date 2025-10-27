@@ -169,6 +169,25 @@ class UsuarioFilialRepository {
         }
         return Array.isArray(data) && data.length > 0
     }
+
+    async getUsuariosByFilialId(idFilial) {
+        const { data, error } = await this.supabase
+            .from('usuario_filial')
+            .select(`
+                *,
+                filiais(*),
+                usuarios(*)
+            `)
+            .eq('id_filial', idFilial)
+            .order('created_at', { ascending: false })
+
+        if (error) {
+            console.error('Erro ao buscar usuários por filial:', error.message)
+            throw new Error(`Erro ao buscar usuários por filial: ${error.message}`)
+        }
+
+        return data
+    }
 }
 
 module.exports = UsuarioFilialRepository 

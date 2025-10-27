@@ -22,13 +22,15 @@ class UsuarioFilialService {
         }
     }
 
-    async getRepresentantesByFilial(request, idFilial) {
+    async getRepresentantesByFilial(request, idFilial, idDepartamento = null) {
         if (!idFilial) {
             throw new Error('ID da filial é obrigatório');
         }
     
         try {
             const { empresa_id } = request.user;
+            const idFil = Number(idFilial);
+            const idDepto = idDepartamento ? Number(idDepartamento) : null;
     
             // 1. Busca departamentos da empresa
             const departamentos = await this.departamentoService.getByEmpresaId(empresa_id);
@@ -67,6 +69,16 @@ class UsuarioFilialService {
                 };
             });
             
+            // Filtra por filial E departamento se idDepartamento foi fornecido
+            if (idDepto !== null) {
+                usuarios = usuarios.filter(u => {
+                    const departamentoId = u.departamento?.id;
+                    return u.id_filial === idFil && departamentoId === idDepto;
+                });
+            } else {
+                // Se não fornecido idDepartamento, filtra apenas por filial
+                usuarios = usuarios.filter(u => u.id_filial === idFil);
+            }
     
             // 5. Ordena por id_departamento e depois por id_usuario
             usuarios.sort((a, b) => {

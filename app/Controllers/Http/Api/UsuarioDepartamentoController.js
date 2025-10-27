@@ -98,6 +98,7 @@ class UsuarioDepartamentoController {
     async getRepresentantesByDepartamento({ request, params, response }){
         try {
             const { idDepartamento } = params
+            
             if (!idDepartamento) {
                 return response.status(400).json({ error: 'ID do departamento é obrigatório nos parâmetros' })
             }

@@ -125,6 +125,28 @@ class UsuarioDepartamentoRepository {
 
         return data
     }
+
+    async getUsuariosByDepartamentoAndFilial(idDepartamento, idFilial) {
+        const { data, error } = await this.supabase
+            .from('usuario_departamento')
+            .select(`
+                *,
+                departamentos(
+                    *,
+                    filiais(*)
+                ),
+                usuarios(*)
+            `)
+            .eq('id_departamento', idDepartamento)
+            .eq('departamentos.filiais.id', idFilial)
+        
+        if (error) {
+            console.error('Erro ao buscar usuários por departamento e filial:', error.message)
+            throw new Error(`Erro ao buscar usuários por departamento e filial: ${error.message}`)
+        }
+
+        return data
+    }
 }
 
 module.exports = UsuarioDepartamentoRepository 
