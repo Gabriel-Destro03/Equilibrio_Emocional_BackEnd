@@ -187,6 +187,7 @@ class DepartamentoRepository {
         let query = this.supabase
             .from('usuario_filial')
             .select(`
+                is_representante,
                 usuario:usuarios!inner (
                     id,
                     uid
@@ -213,6 +214,33 @@ class DepartamentoRepository {
         // Para cada filial, buscamos seus departamentos
         const filiaisComDepartamentos = await Promise.all(
             filiaisData.map(async (item) => {
+                // Se o usuário for representante da filial, retorna somente os departamentos onde ele é representante
+                if (item.is_representante) {
+                    const { data: departamentosRepData, error: depRepError } = await this.supabase
+                        .from('usuario_departamento')
+                        .select(`
+                            departamentos!inner (
+                                id,
+                                nome_departamento,
+                                created_at,
+                                status
+                            )
+                        `)
+                        .eq('id_usuario', item.usuario.id)
+                        .eq('is_representante', true)
+                        .eq('departamentos.id_filial', item.filial.id)
+
+                    if (depRepError) throw new Error(depRepError.message)
+
+                    const departamentosData = (departamentosRepData || []).map(d => d.departamentos)
+
+                    return {
+                        ...item.filial,
+                        departamentos: departamentosData
+                    }
+                }
+
+                // Caso não seja representante da filial, retorna todos os departamentos da filial
                 const { data: departamentosData, error: departamentosError } = await this.supabase
                     .from('departamentos')
                     .select(`
