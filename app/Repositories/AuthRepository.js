@@ -85,10 +85,8 @@ class AuthRepository {
                     id_filial,
                     is_representante,
                     filial:filiais(
-                        cnpj,
-                        endereco,
-                        nome_filial,
-                        departamentos:departamentos(*)
+                        id,
+                        nome_filial
                     )
                 )
             `)

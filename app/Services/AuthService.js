@@ -176,25 +176,18 @@ class AuthService extends IAuthService {
     }
 
     /**
-     * Format filiais data
+     * Format filiais data - retorna apenas id e nome
      * @param {Array} filiais - Raw filiais data
      * @returns {Array} Formatted filiais data
      */
     formatFiliaisData(filiais) {
-
-        //return filiais;
+        if (!filiais || !Array.isArray(filiais)) {
+            return []
+        }
 
         return filiais.map(filial => ({
-            idFilial: filial.filial.id,
-            cnpj: filial.filial.cnpj,
-            endereco: filial.filial.endereco,
-            nome_filial: filial.filial.nome_filial,
-            is_representante: filial.is_representante,
-            departamentos: filial.filial.departamentos.map(d => ({
-                id: d.id,
-                id_filial: d.id_filial,
-                nome: d.nome_departamento
-            })) || []
+            id: filial.filial.id,
+            nome: filial.filial.nome_filial
         }))
     }
 

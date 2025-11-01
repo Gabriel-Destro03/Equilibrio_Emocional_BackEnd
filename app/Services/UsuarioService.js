@@ -112,7 +112,6 @@ class UsuarioService extends IUsuarioService {
             PermissoesHelper.PERMISSOES.DEPARTAMENTO
         ])
         const { isEmpresa, isFilial, isDepartamento } = PermissoesHelper.getNivelPermissao(permissoes)
-        console.log(isEmpresa, isFilial, isDepartamento)
 
         if (!isEmpresa && !isFilial && !isDepartamento) {
             throw new Error('Usuário não tem permissão para acessar esta funcionalidade')
@@ -180,8 +179,6 @@ class UsuarioService extends IUsuarioService {
             const usuariosDepartamentos = await this.usuarioDepartamentoRepository.getUsersByIds(
                 usuarios.map(u => u.id)
             )
-
-            console.log(usuarios)
 
             return usuarios.map(item => {
                 const uf = usuariosFiliais
