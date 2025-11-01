@@ -57,11 +57,15 @@ class UsuarioController {
     
     async getUsuarioByEmpresaId({request, response}) {
         try {
-            // Get empresa_id from token instead of URL parameter
-            const empresa_id = request.user.empresa_id
+            // Get all data from token
+            const { empresa_id, uid, permissoes } = request.user
             
             if (!empresa_id) {
                 return response.status(400).json({ error: 'Empresa ID não encontrado no token' })
+            }
+            
+            if (!uid) {
+                return response.status(400).json({ error: 'UID não encontrado no token' })
             }
             
             const usuarios = await this.service.getUsuarioByEmpresaId(request)
@@ -172,9 +176,16 @@ class UsuarioController {
     /**
      * Lista todos os usuários das filiais que o usuário tem acesso
      */
-    async getUsuariosByFilial({ params, response }) {
+    async getUsuariosByFilial({ request, response }) {
         try {
-            const usuarios = await this.service.getUsuariosByFilial(params.uid)
+            // Get all data from token
+            const { empresa_id, uid, permissoes } = request.user
+            
+            if (!uid) {
+                return response.status(400).json({ error: 'UID não encontrado no token' })
+            }
+            
+            const usuarios = await this.service.getUsuariosByFilial(request)
             return response.status(200).json(usuarios)
         } catch (error) {
             return response.status(400).json({ error: error.message })

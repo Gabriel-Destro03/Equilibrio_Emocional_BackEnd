@@ -97,58 +97,82 @@ class UsuarioService extends IUsuarioService {
     }
 
     /**
-     * Retorna usuários de uma empresa, aplicando filtro conforme permissões
+     * Retorna usuários de uma empresa, aplicando filtro conforme permissões de representante
      */
     async getUsuarioByEmpresaId(request) {
         const { empresa_id, uid, permissoes } = request.user
 
         ValidationHelper.requireField(empresa_id, 'Id da Empresa é obrigatório')
+        ValidationHelper.requireField(uid, 'UID é obrigatório')
 
-        // Valida se o usuário tem alguma permissão
+        // Valida se o usuário tem alguma permissão de representante
         PermissoesHelper.validarPermissoes(permissoes, [
             PermissoesHelper.PERMISSOES.EMPRESA,
             PermissoesHelper.PERMISSOES.FILIAL,
             PermissoesHelper.PERMISSOES.DEPARTAMENTO
         ])
         const { isEmpresa, isFilial, isDepartamento } = PermissoesHelper.getNivelPermissao(permissoes)
+        console.log(isEmpresa, isFilial, isDepartamento)
+
         if (!isEmpresa && !isFilial && !isDepartamento) {
             throw new Error('Usuário não tem permissão para acessar esta funcionalidade')
         }
 
         try {
+            // Busca todos os usuários da empresa (base)
             let usuarios = await this.repository.getUsuariosByEmpresaId(empresa_id)
+            
+            // Busca dados relacionados
             const usuariosIds = usuarios.map(u => u.id)
-
             const filiais = await this.filiaisRepository.getFiliaisByEmpresaId(empresa_id)
             const filiaisIds = filiais.map(f => f.id)
-
             const usuariosFiliais = await this.repository.getUsuariosFiliais(usuariosIds)
             const departamentos = await this.departamentoRepository.getDepartamentosByFiliaisId(filiaisIds)
 
-            // 🔹 FILTROS POR PERMISSÃO
-            if(isEmpresa) {
-
-            }else if (isFilial) {
-                const usuarioFilial = await this.usuarioFilialRepository.getByUsuarioAndFilialByUid(uid)
-                const idsPermitidos = new Set(usuarioFilial.map(u => u.id_filial))
-
-                usuarios = usuarios.filter(usuario => {
-                    const rel = usuariosFiliais.find(uf => uf.id_usuario === usuario.id && uf.status)
-                    return rel && idsPermitidos.has(rel.id_filial)
-                })
-            }else if (isDepartamento) {
+            // 🔹 FILTROS POR PERMISSÃO DE REPRESENTANTE
+            if (isEmpresa) {
+                // Representante de empresa: vê todos os usuários da empresa (sem filtro)
+                // Não precisa filtrar nada
+            } else if (isFilial) {
+                // Representante de filial: vê apenas usuários das filiais que ele representa
                 const usuarioAtual = await this.repository.getUsuarioByUid(uid)
                 if (!usuarioAtual) throw new Error('Usuário não encontrado')
 
-                const usuarioDepartamentos = await this.usuarioDepartamentoRepository.getUsersByIds([usuarioAtual.id])
-                const idsPermitidos = new Set(
-                    usuarioDepartamentos.filter(ud => ud.status).map(ud => ud.id_departamento)
-                )
+                // Busca filiais onde o usuário é representante
+                const usuarioFiliais = await this.usuarioFilialRepository.getByUsuarioAndFilialByUid(uid)
+                const idsFiliaisRepresentante = usuarioFiliais
+                    .filter(uf => uf.is_representante && uf.status)
+                    .map(uf => uf.id_filial)
 
+                if (idsFiliaisRepresentante.length === 0) {
+                    throw new Error('Usuário não é representante de nenhuma filial')
+                }
+
+                // Filtra usuários que estão nas filiais onde ele é representante
+                usuarios = usuarios.filter(usuario => {
+                    const rel = usuariosFiliais.find(uf => uf.id_usuario === usuario.id && uf.status)
+                    return rel && idsFiliaisRepresentante.includes(rel.id_filial)
+                })
+            } else if (isDepartamento) {
+                // Representante de departamento: vê apenas usuários dos departamentos que ele representa
+                const usuarioAtual = await this.repository.getUsuarioByUid(uid)
+                if (!usuarioAtual) throw new Error('Usuário não encontrado')
+
+                // Busca departamentos onde o usuário é representante
+                const usuarioDepartamentos = await this.usuarioDepartamentoRepository.getUsersByIds([usuarioAtual.id])
+                const idsDepartamentosRepresentante = usuarioDepartamentos
+                    .filter(ud => ud.is_representante && ud.status)
+                    .map(ud => ud.id_departamento)
+
+                if (idsDepartamentosRepresentante.length === 0) {
+                    throw new Error('Usuário não é representante de nenhum departamento')
+                }
+
+                // Filtra usuários que estão nos departamentos onde ele é representante
                 const usuariosDepartamentos = await this.usuarioDepartamentoRepository.getUsersByIds(usuariosIds)
                 usuarios = usuarios.filter(usuario => {
                     const rel = usuariosDepartamentos.find(ud => ud.id_usuario === usuario.id && ud.status)
-                    return rel && idsPermitidos.has(rel.id_departamento)
+                    return rel && idsDepartamentosRepresentante.includes(rel.id_departamento)
                 })
             }
 
@@ -156,6 +180,8 @@ class UsuarioService extends IUsuarioService {
             const usuariosDepartamentos = await this.usuarioDepartamentoRepository.getUsersByIds(
                 usuarios.map(u => u.id)
             )
+
+            console.log(usuarios)
 
             return usuarios.map(item => {
                 const uf = usuariosFiliais
@@ -285,25 +311,95 @@ class UsuarioService extends IUsuarioService {
     // =============================
     // 🔹 USUÁRIOS POR FILIAL
     // =============================
-    async getUsuariosByFilial(uid) {
-        ValidationHelper.requireField(uid, 'ID do usuário é obrigatório')
+    async getUsuariosByFilial(request) {
+        const { empresa_id, uid, permissoes } = request.user
+
+        ValidationHelper.requireField(empresa_id, 'Id da Empresa é obrigatório')
+        ValidationHelper.requireField(uid, 'UID é obrigatório')
+
+        // Valida se o usuário tem alguma permissão de representante
+        PermissoesHelper.validarPermissoes(permissoes, [
+            PermissoesHelper.PERMISSOES.EMPRESA,
+            PermissoesHelper.PERMISSOES.FILIAL,
+            PermissoesHelper.PERMISSOES.DEPARTAMENTO
+        ])
+        const { isEmpresa, isFilial, isDepartamento } = PermissoesHelper.getNivelPermissao(permissoes)
+        
+        if (!isEmpresa && !isFilial && !isDepartamento) {
+            throw new Error('Usuário não tem permissão para acessar esta funcionalidade')
+        }
 
         try {
-            const PERMISSOES = {
-                ADM: [7],
-                FILIAL: [2, 5],
-                DEPARTAMENTO: [3, 6]
+            // Busca dados do usuário atual
+            const usuarioAtual = await this.repository.getUsuarioByUid(uid)
+            if (!usuarioAtual) throw new Error('Usuário não encontrado')
+
+            // Busca todos os usuários com relacionamentos
+            let usuarios = await this.repository.getUsuariosComRelacionamentos()
+
+            // 🔹 FILTROS POR PERMISSÃO DE REPRESENTANTE
+            if (isEmpresa) {
+                // Representante de empresa: vê todos os usuários da empresa
+                usuarios = usuarios.filter(u => u.empresa_id === empresa_id)
+            } else if (isFilial) {
+                // Representante de filial: vê apenas usuários das filiais que ele representa
+                const usuarioFiliais = await this.usuarioFilialRepository.getByUsuarioAndFilialByUid(uid)
+                const idsFiliaisRepresentante = usuarioFiliais
+                    .filter(uf => uf.is_representante && uf.status)
+                    .map(uf => uf.id_filial)
+
+                if (idsFiliaisRepresentante.length === 0) {
+                    throw new Error('Usuário não é representante de nenhuma filial')
+                }
+
+                // Filtra usuários das filiais onde ele é representante
+                usuarios = usuarios.filter(u => {
+                    const filialRel = u.usuario_filial?.find(uf => uf.status)
+                    return filialRel && idsFiliaisRepresentante.includes(filialRel.id_filial)
+                })
+            } else if (isDepartamento) {
+                // Representante de departamento: vê apenas usuários dos departamentos que ele representa
+                const usuarioDepartamentos = await this.usuarioDepartamentoRepository.getUsersByIds([usuarioAtual.id])
+                const idsDepartamentosRepresentante = usuarioDepartamentos
+                    .filter(ud => ud.is_representante && ud.status)
+                    .map(ud => ud.id_departamento)
+
+                if (idsDepartamentosRepresentante.length === 0) {
+                    throw new Error('Usuário não é representante de nenhum departamento')
+                }
+
+                // Filtra usuários dos departamentos onde ele é representante
+                usuarios = usuarios.filter(u => {
+                    const deptoRel = u.usuario_departamento?.find(ud => ud.status)
+                    return deptoRel && idsDepartamentosRepresentante.includes(deptoRel.id_departamento)
+                })
             }
 
-            const permissaoUser = await this.repository.getUserPermissions(uid)
-            const permissoes = permissaoUser.map(p => p.permissoes) ?? []
-            const possuiPermissao = ids => permissoes.some(p => ids.includes(p.id))
+            // 🔹 FORMATAR RESULTADO
+            const usuariosFormatados = usuarios.map(u => {
+                const filial = u.usuario_filial?.[0]?.filiais ?? {}
+                const departamento = u.usuario_departamento?.[0]?.departamentos ?? {}
 
-            const isAdm = possuiPermissao(PERMISSOES.ADM)
-            const isFilial = possuiPermissao(PERMISSOES.FILIAL)
-            const isDepartamento = possuiPermissao(PERMISSOES.DEPARTAMENTO)
+                return {
+                    id: u.id,
+                    uid: u.uid,
+                    nome_completo: u.nome_completo,
+                    cargo: u.cargo,
+                    email: u.email,
+                    telefone: u.telefone,
+                    status: u.status,
+                    created_at: u.created_at,
+                    nome_filial: filial.nome_filial ?? null,
+                    id_filial: filial.id ?? null,
+                    departamento: departamento.nome_departamento ?? null,
+                    id_departamento: departamento.id ?? null
+                }
+            })
 
-            return await this.repository.getUsuariosByFilial(uid, isAdm, isFilial, isDepartamento)
+            // Ordena do mais recente para o mais antigo
+            usuariosFormatados.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+
+            return usuariosFormatados
         } catch (error) {
             throw new Error(`Erro ao buscar usuários da filial: ${error.message}`)
         }

@@ -355,125 +355,51 @@ class UsuarioRepository {
         }
     }
 
-    async getUsuariosByFilial(uid, isAdm, isRepresentanteFilial,isRepresentanteDepartamento) {
+    /**
+     * Busca todos os usuários com seus relacionamentos (filiais e departamentos)
+     * Sem lógica de negócio - apenas retorna os dados
+     */
+    async getUsuariosComRelacionamentos() {
         try {
-            // 2. Busca filiais e departamentos representados
-            const { data: userData, error: errorUser } = await this.supabase
-              .from('usuarios')
-              .select(`
-                id,
-                nome_completo,
-                uid,
-                usuario_departamento (
-                  id_departamento,
-                  is_representante
-                ),
-                usuario_filial (
-                  id_filial,
-                  is_representante
-                )
-              `)
-              .eq('uid', uid)
-              .single();
-          
-            if (errorUser || !userData) {
-              console.error('Erro ao buscar dados do usuário:', errorUser);
-              return [];
+            const { data: usuarios, error } = await this.supabase
+                .from('usuarios')
+                .select(`
+                    id,
+                    uid,
+                    nome_completo,
+                    cargo,
+                    email,
+                    telefone,
+                    status,
+                    created_at,
+                    empresa_id,
+                    usuario_filial (
+                        id_filial,
+                        status,
+                        filiais (
+                            id,
+                            nome_filial
+                        )
+                    ),
+                    usuario_departamento (
+                        id_departamento,
+                        status,
+                        departamentos (
+                            id,
+                            nome_departamento
+                        )
+                    )
+                `)
+                .order('created_at', { ascending: false })
+
+            if (error) {
+                throw new Error(`Erro ao buscar usuários: ${error.message}`)
             }
-      
-        const idsFiliaisRepresentante = userData.usuario_filial
-          ?.filter(f => f.is_representante)
-          .map(f => f.id_filial) ?? [];
-      
-        const idsDepartamentosRepresentante = userData.usuario_departamento
-          ?.filter(d => d.is_representante)
-          .map(d => d.id_departamento) ?? [];
-      
-        if (!isAdm && idsFiliaisRepresentante.length === 0 && idsDepartamentosRepresentante.length === 0) {
-          return [];
-        }
-      
-        // 3. Busca todos os usuários com vínculos
-        let { data: usuarios, error: errorUsuarios } = await this.supabase
-          .from('usuarios')
-          .select(`
-            id,
-            uid,
-            nome_completo,
-            cargo,
-            email,
-            telefone,
-            status,
-            created_at,
-            usuario_filial (
-              id_filial,
-              filiais (
-                id,
-                nome_filial
-              )
-            ),
-            usuario_departamento (
-              id_departamento,
-              departamentos (
-                id,
-                nome_departamento
-              )
-            )
-          `);
-      
-        if (errorUsuarios || !usuarios) {
-          console.error('Erro ao buscar usuários:', errorUsuarios);
-          return [];
-        }
-      
-        // 4. Filtra se não for ADM
-        if (!isAdm) {
-          const podeFiltrarPorFilial = isRepresentanteFilial && idsFiliaisRepresentante.length > 0;
-          const podeFiltrarPorDepartamento = isRepresentanteDepartamento && idsDepartamentosRepresentante.length > 0;
-      
-          if (podeFiltrarPorFilial) {
-            usuarios = usuarios.filter(u =>
-              u.usuario_filial?.[0] &&
-              idsFiliaisRepresentante.includes(u.usuario_filial[0].id_filial)
-            );
-          } else if (podeFiltrarPorDepartamento) {
-            usuarios = usuarios.filter(u =>
-              u.usuario_departamento?.[0] &&
-              idsDepartamentosRepresentante.includes(u.usuario_departamento[0].id_departamento)
-            );
-          } else {
-            return [];
-          }
-        }
-      
-        // 5. Formata resultado final
-        const usuariosFormatados = usuarios.map(u => {
-          const filial = u.usuario_filial?.[0]?.filiais ?? {};
-          const departamento = u.usuario_departamento?.[0]?.departamentos ?? {};
-      
-          return {
-            id: u.id,
-            uid: u.uid,
-            nome_completo: u.nome_completo,
-            cargo: u.cargo,
-            email: u.email,
-            telefone: u.telefone,
-            status: u.status,
-            created_at: u.created_at,
-            nome_filial: filial.nome_filial ?? null,
-            id_filial: filial.id ?? null,
-            departamento: departamento.nome_departamento ?? null,
-            id_departamento: departamento.id ?? null
-          };
-        });
-      
-        // 6. Ordena do mais recente para o mais antigo
-        usuariosFormatados.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-      
-        return usuariosFormatados;
+
+            return usuarios || []
         } catch (error) {
-            console.error('Erro no getUsuariosByFilial:', error);
-            throw new Error(`Erro ao buscar usuários da filial: ${error.message}`);
+            console.error('Erro no getUsuariosComRelacionamentos:', error)
+            throw new Error(`Erro ao buscar usuários com relacionamentos: ${error.message}`)
         }
     }    
     
