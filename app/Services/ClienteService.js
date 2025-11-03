@@ -95,6 +95,7 @@ class ClienteService extends IClienteService {
         await this.validateClienteData(clienteData, false)
 
         try {
+            const { usuario, empresa } = clienteData
             // 1. Verificar se o cliente já existe
             const clienteExistente = await this.repository.clienteExistsByEmail(usuario.email)
             if (clienteExistente) {
